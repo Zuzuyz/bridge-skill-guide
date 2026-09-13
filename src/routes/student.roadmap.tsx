@@ -1,0 +1,2 @@
+import { createFileRoute } from "@tanstack/react-router"; import { RoadmapPage } from "@/components/student-pages";
+export const Route=createFileRoute("/student/roadmap")({head:()=>({meta:[{title:"Career Roadmap — SkillBridge"},{name:"description",content:"Follow your personalized AI Engineer roadmap."},{property:"og:title",content:"Career Roadmap — SkillBridge"},{property:"og:description",content:"Complete skills, resources, and portfolio projects."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary"}]}),component:RoadmapPage});
