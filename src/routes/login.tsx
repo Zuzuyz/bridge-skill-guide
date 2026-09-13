@@ -1,0 +1,15 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { AuthPage } from "@/components/auth-page";
+export const Route = createFileRoute("/login")({
+  head: () => ({
+    meta: [
+      { title: "Login — SkillBridge" },
+      { name: "description", content: "Sign in to your SkillBridge career workspace." },
+      { property: "og:title", content: "Login — SkillBridge" },
+      { property: "og:description", content: "Continue your SkillBridge career journey." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: () => <AuthPage mode="login" />,
+});

@@ -1,0 +1,15 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { CompanyDashboard } from "@/components/organization-pages";
+export const Route = createFileRoute("/company/dashboard")({
+  head: () => ({
+    meta: [
+      { title: "Company Dashboard — SkillBridge" },
+      { name: "description", content: "Skills-first hiring intelligence for companies." },
+      { property: "og:title", content: "Company Dashboard — SkillBridge" },
+      { property: "og:description", content: "Manage roles and discover verified talent." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: CompanyDashboard,
+});

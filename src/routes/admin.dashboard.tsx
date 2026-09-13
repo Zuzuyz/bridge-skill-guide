@@ -1,0 +1,15 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { AdminDashboard } from "@/components/organization-pages";
+export const Route = createFileRoute("/admin/dashboard")({
+  head: () => ({
+    meta: [
+      { title: "Admin Dashboard — SkillBridge" },
+      { name: "description", content: "Monitor the SkillBridge ecosystem and platform health." },
+      { property: "og:title", content: "Admin Dashboard — SkillBridge" },
+      { property: "og:description", content: "SkillBridge platform operations and trust metrics." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: AdminDashboard,
+});

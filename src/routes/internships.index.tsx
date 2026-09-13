@@ -1,0 +1,15 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { InternshipsPage } from "@/components/internship-pages";
+export const Route = createFileRoute("/internships/")({
+  head: () => ({
+    meta: [
+      { title: "Internships — SkillBridge" },
+      { name: "description", content: "Discover verified internships matched to your skills." },
+      { property: "og:title", content: "Internships — SkillBridge" },
+      { property: "og:description", content: "Explore skill-matched, verified opportunities." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: InternshipsPage,
+});
