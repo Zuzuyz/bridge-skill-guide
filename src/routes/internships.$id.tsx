@@ -11,8 +11,10 @@ export const Route = createFileRoute("/internships/$id")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: () => {
-    const { id } = Route.useParams();
-    return <InternshipDetail id={id} />;
-  },
+  component: InternshipDetailsRoute,
 });
+
+function InternshipDetailsRoute() {
+  const { id } = Route.useParams();
+  return <InternshipDetail id={id} />;
+}
