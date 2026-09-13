@@ -1,4 +1,16 @@
-import { BarChart3, BriefcaseBusiness, Building2, CheckCircle2, CircleGauge, ClipboardCheck, Plus, Search, ShieldCheck, TrendingUp, Users } from "lucide-react";
+import {
+  BarChart3,
+  BriefcaseBusiness,
+  Building2,
+  CheckCircle2,
+  CircleGauge,
+  ClipboardCheck,
+  Plus,
+  Search,
+  ShieldCheck,
+  TrendingUp,
+  Users,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis } from "recharts";
 import { AppShell } from "@/components/app-shell";
@@ -8,15 +20,433 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { Input } from "@/components/ui/input";
 import { candidates, collegeChartData, internships } from "@/data/mock-data";
 
-export function CompanyDashboard() { return <AppShell role="company" title="Talent intelligence overview" eyebrow="HyperScale AI"><div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Open roles" value="18" detail="4 added this month" icon={<BriefcaseBusiness className="size-4"/>}/><StatCard label="Applicants" value="428" detail="62 new this week" icon={<Users className="size-4"/>}/><StatCard label="Avg. skill match" value="86%" detail="12% above benchmark" icon={<CircleGauge className="size-4"/>}/><StatCard label="Shortlisted" value="47" detail="11 interviews set" icon={<ClipboardCheck className="size-4"/>}/></div><div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_.8fr]"><section className="rounded-xl border bg-card p-6 soft-shadow"><h2 className="text-xl font-bold">Top matching candidates</h2><div className="mt-5 space-y-3">{candidates.map((candidate) => <div key={candidate.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-muted p-4"><div><strong>{candidate.name}</strong><p className="text-xs text-muted-foreground">{candidate.college} • {candidate.role}</p></div><div className="text-right"><span className="rounded-full bg-success/20 px-3 py-1 text-xs font-bold text-success-foreground">{candidate.match}% match</span><p className="mt-1 text-xs text-muted-foreground">{candidate.projects} projects</p></div></div>)}</div></section><section className="rounded-xl border bg-card p-6 soft-shadow"><h2 className="text-xl font-bold">Hiring funnel</h2><div className="mt-6 space-y-5">{[["Applied",428,100],["Qualified",186,44],["Shortlisted",47,11],["Interview",11,3]].map(([label,value,width]) => <div key={String(label)}><div className="mb-2 flex justify-between text-sm"><span>{label}</span><strong>{value}</strong></div><div className="h-2 rounded-full bg-muted"><div className="h-full rounded-full bg-secondary" style={{width:`${width}%`}}/></div></div>)}</div></section></div></AppShell>; }
+export function CompanyDashboard() {
+  return (
+    <AppShell role="company" title="Talent intelligence overview" eyebrow="HyperScale AI">
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Open roles"
+          value="18"
+          detail="4 added this month"
+          icon={<BriefcaseBusiness className="size-4" />}
+        />
+        <StatCard
+          label="Applicants"
+          value="428"
+          detail="62 new this week"
+          icon={<Users className="size-4" />}
+        />
+        <StatCard
+          label="Avg. skill match"
+          value="86%"
+          detail="12% above benchmark"
+          icon={<CircleGauge className="size-4" />}
+        />
+        <StatCard
+          label="Shortlisted"
+          value="47"
+          detail="11 interviews set"
+          icon={<ClipboardCheck className="size-4" />}
+        />
+      </div>
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1.2fr_.8fr]">
+        <section className="rounded-xl border bg-card p-6 soft-shadow">
+          <h2 className="text-xl font-bold">Top matching candidates</h2>
+          <div className="mt-5 space-y-3">
+            {candidates.map((candidate) => (
+              <div
+                key={candidate.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-muted p-4"
+              >
+                <div>
+                  <strong>{candidate.name}</strong>
+                  <p className="text-xs text-muted-foreground">
+                    {candidate.college} • {candidate.role}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="rounded-full bg-success/20 px-3 py-1 text-xs font-bold text-success-foreground">
+                    {candidate.match}% match
+                  </span>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {candidate.projects} projects
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+        <section className="rounded-xl border bg-card p-6 soft-shadow">
+          <h2 className="text-xl font-bold">Hiring funnel</h2>
+          <div className="mt-6 space-y-5">
+            {[
+              ["Applied", 428, 100],
+              ["Qualified", 186, 44],
+              ["Shortlisted", 47, 11],
+              ["Interview", 11, 3],
+            ].map(([label, value, width]) => (
+              <div key={String(label)}>
+                <div className="mb-2 flex justify-between text-sm">
+                  <span>{label}</span>
+                  <strong>{value}</strong>
+                </div>
+                <div className="h-2 rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-secondary"
+                    style={{ width: `${width}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    </AppShell>
+  );
+}
 
-export function CompanyInternshipsPage() { const [open, setOpen] = useState(false); const [posted, setPosted] = useState(false); return <AppShell role="company" title="Internship management" eyebrow="Create and manage opportunities" actions={<Button className="rounded-full" onClick={() => setOpen(!open)}><Plus/>Post internship</Button>}>{open && <form onSubmit={(e) => {e.preventDefault();setPosted(true);setOpen(false)}} className="mb-6 grid gap-4 rounded-xl border bg-card p-6 soft-shadow md:grid-cols-2"><Input required placeholder="Internship role"/><Input required placeholder="Location"/><Input required placeholder="Required skills (comma separated)"/><Input required placeholder="Stipend"/><Button type="submit" className="rounded-full md:col-span-2">Publish internship</Button></form>}{posted && <p className="mb-5 rounded-lg bg-success/15 p-3 text-sm font-bold text-success-foreground">Internship published successfully.</p>}<div className="grid gap-5 lg:grid-cols-2">{internships.map((item, index) => <article key={item.id} className="rounded-xl border bg-card p-6 soft-shadow"><div className="flex justify-between"><div><p className="text-xs font-bold uppercase text-secondary">{index === 0 ? "Active" : "Draft"}</p><h2 className="mt-1 text-xl font-bold">{item.role}</h2></div><span className="rounded-full bg-muted px-3 py-1 text-xs font-bold">{42 - index * 9} applicants</span></div><p className="mt-2 text-sm text-muted-foreground">{item.location} • {item.duration} • {item.stipend}</p><div className="mt-5 flex flex-wrap gap-2">{item.skills.map((skill) => <span key={skill} className="rounded-full bg-accent px-3 py-1 text-xs font-bold text-accent-foreground">{skill}</span>)}</div><div className="mt-6 flex justify-between border-t pt-4 text-sm"><span>Avg. match <strong>{item.match - 5}%</strong></span><Button size="sm" variant="outline" className="rounded-full">View applicants</Button></div></article>)}</div></AppShell>; }
+export function CompanyInternshipsPage() {
+  const [open, setOpen] = useState(false);
+  const [posted, setPosted] = useState(false);
+  return (
+    <AppShell
+      role="company"
+      title="Internship management"
+      eyebrow="Create and manage opportunities"
+      actions={
+        <Button className="rounded-full" onClick={() => setOpen(!open)}>
+          <Plus />
+          Post internship
+        </Button>
+      }
+    >
+      {open && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setPosted(true);
+            setOpen(false);
+          }}
+          className="mb-6 grid gap-4 rounded-xl border bg-card p-6 soft-shadow md:grid-cols-2"
+        >
+          <Input required placeholder="Internship role" />
+          <Input required placeholder="Location" />
+          <Input required placeholder="Required skills (comma separated)" />
+          <Input required placeholder="Stipend" />
+          <Button type="submit" className="rounded-full md:col-span-2">
+            Publish internship
+          </Button>
+        </form>
+      )}
+      {posted && (
+        <p className="mb-5 rounded-lg bg-success/15 p-3 text-sm font-bold text-success-foreground">
+          Internship published successfully.
+        </p>
+      )}
+      <div className="grid gap-5 lg:grid-cols-2">
+        {internships.map((item, index) => (
+          <article key={item.id} className="rounded-xl border bg-card p-6 soft-shadow">
+            <div className="flex justify-between">
+              <div>
+                <p className="text-xs font-bold uppercase text-secondary">
+                  {index === 0 ? "Active" : "Draft"}
+                </p>
+                <h2 className="mt-1 text-xl font-bold">{item.role}</h2>
+              </div>
+              <span className="rounded-full bg-muted px-3 py-1 text-xs font-bold">
+                {42 - index * 9} applicants
+              </span>
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {item.location} • {item.duration} • {item.stipend}
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {item.skills.map((skill) => (
+                <span
+                  key={skill}
+                  className="rounded-full bg-accent px-3 py-1 text-xs font-bold text-accent-foreground"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+            <div className="mt-6 flex justify-between border-t pt-4 text-sm">
+              <span>
+                Avg. match <strong>{item.match - 5}%</strong>
+              </span>
+              <Button size="sm" variant="outline" className="rounded-full">
+                View applicants
+              </Button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </AppShell>
+  );
+}
 
-export function CandidatesPage() { const [query,setQuery]=useState(""); const [shortlisted,setShortlisted]=useState<string[]>([]); const results=useMemo(()=>candidates.filter(c=>`${c.name} ${c.college} ${c.skills.join(" ")}`.toLowerCase().includes(query.toLowerCase())),[query]); return <AppShell role="company" title="Candidate discovery" eyebrow="Search verified student talent"><div className="mb-6 rounded-xl border bg-card p-4 soft-shadow"><label className="relative"><Search className="absolute left-3 top-3 size-4 text-muted-foreground"/><Input className="h-10 pl-9" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search by skill, college, or candidate"/></label></div><div className="grid gap-5 xl:grid-cols-3">{results.map(c=><article key={c.id} className="rounded-xl border bg-card p-6 soft-shadow"><div className="flex items-center gap-3"><span className="flex size-12 items-center justify-center rounded-full bg-accent font-bold text-secondary">{c.name.split(" ").map(n=>n[0]).join("")}</span><div><h2 className="font-bold">{c.name}</h2><p className="text-xs text-muted-foreground">{c.college}</p></div></div><div className="mt-5 grid grid-cols-3 gap-2 text-center"><div className="rounded-lg bg-muted p-3"><strong>{c.readiness}%</strong><p className="text-[10px] text-muted-foreground">Readiness</p></div><div className="rounded-lg bg-muted p-3"><strong>{c.match}%</strong><p className="text-[10px] text-muted-foreground">Match</p></div><div className="rounded-lg bg-muted p-3"><strong>{c.projects}</strong><p className="text-[10px] text-muted-foreground">Projects</p></div></div><div className="mt-4 flex flex-wrap gap-2">{c.skills.map(s=><span key={s} className="rounded-full bg-success/15 px-2 py-1 text-xs font-semibold">{s}</span>)}</div><Button className="mt-5 w-full rounded-full" variant={shortlisted.includes(c.id)?"secondary":"default"} onClick={()=>setShortlisted(v=>v.includes(c.id)?v.filter(id=>id!==c.id):[...v,c.id])}>{shortlisted.includes(c.id)?<><CheckCircle2/>Shortlisted</>:"Shortlist candidate"}</Button></article>)}</div></AppShell>; }
+export function CandidatesPage() {
+  const [query, setQuery] = useState("");
+  const [shortlisted, setShortlisted] = useState<string[]>([]);
+  const results = useMemo(
+    () =>
+      candidates.filter((c) =>
+        `${c.name} ${c.college} ${c.skills.join(" ")}`.toLowerCase().includes(query.toLowerCase()),
+      ),
+    [query],
+  );
+  return (
+    <AppShell role="company" title="Candidate discovery" eyebrow="Search verified student talent">
+      <div className="mb-6 rounded-xl border bg-card p-4 soft-shadow">
+        <label className="relative">
+          <Search className="absolute left-3 top-3 size-4 text-muted-foreground" />
+          <Input
+            className="h-10 pl-9"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search by skill, college, or candidate"
+          />
+        </label>
+      </div>
+      <div className="grid gap-5 xl:grid-cols-3">
+        {results.map((c) => (
+          <article key={c.id} className="rounded-xl border bg-card p-6 soft-shadow">
+            <div className="flex items-center gap-3">
+              <span className="flex size-12 items-center justify-center rounded-full bg-accent font-bold text-secondary">
+                {c.name
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")}
+              </span>
+              <div>
+                <h2 className="font-bold">{c.name}</h2>
+                <p className="text-xs text-muted-foreground">{c.college}</p>
+              </div>
+            </div>
+            <div className="mt-5 grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-lg bg-muted p-3">
+                <strong>{c.readiness}%</strong>
+                <p className="text-[10px] text-muted-foreground">Readiness</p>
+              </div>
+              <div className="rounded-lg bg-muted p-3">
+                <strong>{c.match}%</strong>
+                <p className="text-[10px] text-muted-foreground">Match</p>
+              </div>
+              <div className="rounded-lg bg-muted p-3">
+                <strong>{c.projects}</strong>
+                <p className="text-[10px] text-muted-foreground">Projects</p>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {c.skills.map((s) => (
+                <span
+                  key={s}
+                  className="rounded-full bg-success/15 px-2 py-1 text-xs font-semibold"
+                >
+                  {s}
+                </span>
+              ))}
+            </div>
+            <Button
+              className="mt-5 w-full rounded-full"
+              variant={shortlisted.includes(c.id) ? "secondary" : "default"}
+              onClick={() =>
+                setShortlisted((v) =>
+                  v.includes(c.id) ? v.filter((id) => id !== c.id) : [...v, c.id],
+                )
+              }
+            >
+              {shortlisted.includes(c.id) ? (
+                <>
+                  <CheckCircle2 />
+                  Shortlisted
+                </>
+              ) : (
+                "Shortlist candidate"
+              )}
+            </Button>
+          </article>
+        ))}
+      </div>
+    </AppShell>
+  );
+}
 
-const chartConfig={students:{label:"Students",color:"var(--chart-2)"},demand:{label:"Demand",color:"var(--chart-1)"}};
-export function CollegeDashboard() { return <AppShell role="college" title="Placement readiness intelligence" eyebrow="IIT Delhi • 2027 cohort"><div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Total students" value="2,480" detail="94% profiles active" icon={<Users className="size-4"/>}/><StatCard label="Industry readiness" value="74%" detail="Up 8% this term" icon={<CircleGauge className="size-4"/>}/><StatCard label="Placement ready" value="68%" detail="1,686 students" icon={<ClipboardCheck className="size-4"/>}/><StatCard label="Live opportunities" value="324" detail="Across 86 companies" icon={<BriefcaseBusiness className="size-4"/>}/></div><div className="mt-6 grid gap-6 lg:grid-cols-[1.35fr_.65fr]"><section className="rounded-xl border bg-card p-6 soft-shadow"><h2 className="text-xl font-bold">Skills × industry demand</h2><ChartContainer config={chartConfig} className="mt-5 h-80 w-full"><BarChart data={collegeChartData}><CartesianGrid vertical={false}/><XAxis dataKey="name" tickLine={false} axisLine={false}/><YAxis tickLine={false} axisLine={false}/><ChartTooltip content={<ChartTooltipContent/>}/><Bar dataKey="students" fill="var(--color-students)" radius={6}/><Bar dataKey="demand" fill="var(--color-demand)" radius={6}/></BarChart></ChartContainer></section><section className="rounded-xl border bg-card p-6 soft-shadow"><h2 className="text-xl font-bold">Top missing skills</h2><div className="mt-5 space-y-4">{[["MLOps",61],["Cloud architecture",54],["Deep learning",48],["System design",43],["Cybersecurity",38]].map(([name,value])=><div key={String(name)}><div className="mb-1 flex justify-between text-sm"><span>{name}</span><strong>{value}%</strong></div><div className="h-2 rounded-full bg-muted"><div className="h-full rounded-full bg-primary" style={{width:`${value}%`}}/></div></div>)}</div></section></div></AppShell>; }
+const chartConfig = {
+  students: { label: "Students", color: "var(--chart-2)" },
+  demand: { label: "Demand", color: "var(--chart-1)" },
+};
+export function CollegeDashboard() {
+  return (
+    <AppShell
+      role="college"
+      title="Placement readiness intelligence"
+      eyebrow="IIT Delhi • 2027 cohort"
+    >
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Total students"
+          value="2,480"
+          detail="94% profiles active"
+          icon={<Users className="size-4" />}
+        />
+        <StatCard
+          label="Industry readiness"
+          value="74%"
+          detail="Up 8% this term"
+          icon={<CircleGauge className="size-4" />}
+        />
+        <StatCard
+          label="Placement ready"
+          value="68%"
+          detail="1,686 students"
+          icon={<ClipboardCheck className="size-4" />}
+        />
+        <StatCard
+          label="Live opportunities"
+          value="324"
+          detail="Across 86 companies"
+          icon={<BriefcaseBusiness className="size-4" />}
+        />
+      </div>
+      <div className="mt-6 grid gap-6 lg:grid-cols-[1.35fr_.65fr]">
+        <section className="rounded-xl border bg-card p-6 soft-shadow">
+          <h2 className="text-xl font-bold">Skills × industry demand</h2>
+          <ChartContainer config={chartConfig} className="mt-5 h-80 w-full">
+            <BarChart data={collegeChartData}>
+              <CartesianGrid vertical={false} />
+              <XAxis dataKey="name" tickLine={false} axisLine={false} />
+              <YAxis tickLine={false} axisLine={false} />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Bar dataKey="students" fill="var(--color-students)" radius={6} />
+              <Bar dataKey="demand" fill="var(--color-demand)" radius={6} />
+            </BarChart>
+          </ChartContainer>
+        </section>
+        <section className="rounded-xl border bg-card p-6 soft-shadow">
+          <h2 className="text-xl font-bold">Top missing skills</h2>
+          <div className="mt-5 space-y-4">
+            {[
+              ["MLOps", 61],
+              ["Cloud architecture", 54],
+              ["Deep learning", 48],
+              ["System design", 43],
+              ["Cybersecurity", 38],
+            ].map(([name, value]) => (
+              <div key={String(name)}>
+                <div className="mb-1 flex justify-between text-sm">
+                  <span>{name}</span>
+                  <strong>{value}%</strong>
+                </div>
+                <div className="h-2 rounded-full bg-muted">
+                  <div className="h-full rounded-full bg-primary" style={{ width: `${value}%` }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    </AppShell>
+  );
+}
 
-export function CollegeStudentsPage(){return <AppShell role="college" title="Student analytics" eyebrow="Cohort-level readiness"><div className="grid gap-6 lg:grid-cols-2"><section className="rounded-xl border bg-card p-6 soft-shadow"><h2 className="text-xl font-bold">Readiness distribution</h2><ChartContainer config={{value:{label:"Students",color:"var(--chart-3)"}}} className="mt-5 h-72"><PieChart><ChartTooltip content={<ChartTooltipContent/>}/><Pie data={[{name:"Ready",value:68},{name:"Developing",value:24},{name:"At risk",value:8}]} dataKey="value" nameKey="name" innerRadius={65} outerRadius={100}>{["var(--chart-3)","var(--chart-1)","var(--chart-4)"].map((fill)=><Cell key={fill} fill={fill}/>)}</Pie></PieChart></ChartContainer></section><section className="rounded-xl border bg-card p-6 soft-shadow"><h2 className="text-xl font-bold">Highest-growth skills</h2><div className="mt-5 space-y-4">{collegeChartData.map(row=><div key={row.name} className="flex items-center justify-between rounded-lg bg-muted p-4"><div><strong>{row.name}</strong><p className="text-xs text-muted-foreground">Cohort proficiency</p></div><span className="font-display text-2xl font-bold">{row.students}%</span></div>)}</div></section></div></AppShell>}
+export function CollegeStudentsPage() {
+  return (
+    <AppShell role="college" title="Student analytics" eyebrow="Cohort-level readiness">
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="rounded-xl border bg-card p-6 soft-shadow">
+          <h2 className="text-xl font-bold">Readiness distribution</h2>
+          <ChartContainer
+            config={{ value: { label: "Students", color: "var(--chart-3)" } }}
+            className="mt-5 h-72"
+          >
+            <PieChart>
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <Pie
+                data={[
+                  { name: "Ready", value: 68 },
+                  { name: "Developing", value: 24 },
+                  { name: "At risk", value: 8 },
+                ]}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={65}
+                outerRadius={100}
+              >
+                {["var(--chart-3)", "var(--chart-1)", "var(--chart-4)"].map((fill) => (
+                  <Cell key={fill} fill={fill} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ChartContainer>
+        </section>
+        <section className="rounded-xl border bg-card p-6 soft-shadow">
+          <h2 className="text-xl font-bold">Highest-growth skills</h2>
+          <div className="mt-5 space-y-4">
+            {collegeChartData.map((row) => (
+              <div
+                key={row.name}
+                className="flex items-center justify-between rounded-lg bg-muted p-4"
+              >
+                <div>
+                  <strong>{row.name}</strong>
+                  <p className="text-xs text-muted-foreground">Cohort proficiency</p>
+                </div>
+                <span className="font-display text-2xl font-bold">{row.students}%</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+    </AppShell>
+  );
+}
 
-export function AdminDashboard(){return <AppShell role="admin" title="Platform operations" eyebrow="SkillBridge administration"><div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Active learners" value="120K" detail="12.4% monthly growth" icon={<Users className="size-4"/>}/><StatCard label="Partner colleges" value="450" detail="38 added this quarter" icon={<Building2 className="size-4"/>}/><StatCard label="Hiring partners" value="1,200" detail="96% verified" icon={<ShieldCheck className="size-4"/>}/><StatCard label="Successful matches" value="18.6K" detail="92% quality score" icon={<TrendingUp className="size-4"/>}/></div><section className="mt-6 rounded-xl border bg-card p-6 soft-shadow"><h2 className="text-xl font-bold">Platform health</h2><div className="mt-5 grid gap-4 md:grid-cols-3">{[["AI skill analyses","48,290","99.8% success"],["Open opportunities","3,842","All moderated"],["Applications this week","12,408","18% conversion"]].map(([label,value,detail])=><div key={label} className="rounded-xl bg-muted p-5"><p className="text-xs font-bold uppercase text-muted-foreground">{label}</p><strong className="mt-2 block font-display text-3xl">{value}</strong><p className="mt-2 text-sm text-success">{detail}</p></div>)}</div></section></AppShell>}
+export function AdminDashboard() {
+  return (
+    <AppShell role="admin" title="Platform operations" eyebrow="SkillBridge administration">
+      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Active learners"
+          value="120K"
+          detail="12.4% monthly growth"
+          icon={<Users className="size-4" />}
+        />
+        <StatCard
+          label="Partner colleges"
+          value="450"
+          detail="38 added this quarter"
+          icon={<Building2 className="size-4" />}
+        />
+        <StatCard
+          label="Hiring partners"
+          value="1,200"
+          detail="96% verified"
+          icon={<ShieldCheck className="size-4" />}
+        />
+        <StatCard
+          label="Successful matches"
+          value="18.6K"
+          detail="92% quality score"
+          icon={<TrendingUp className="size-4" />}
+        />
+      </div>
+      <section className="mt-6 rounded-xl border bg-card p-6 soft-shadow">
+        <h2 className="text-xl font-bold">Platform health</h2>
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
+          {[
+            ["AI skill analyses", "48,290", "99.8% success"],
+            ["Open opportunities", "3,842", "All moderated"],
+            ["Applications this week", "12,408", "18% conversion"],
+          ].map(([label, value, detail]) => (
+            <div key={label} className="rounded-xl bg-muted p-5">
+              <p className="text-xs font-bold uppercase text-muted-foreground">{label}</p>
+              <strong className="mt-2 block font-display text-3xl">{value}</strong>
+              <p className="mt-2 text-sm text-success">{detail}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </AppShell>
+  );
+}

@@ -1,2 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router"; import { SkillGapPage } from "@/components/student-pages";
-export const Route=createFileRoute("/student/skill-gap")({head:()=>({meta:[{title:"Skill Gap Analysis — SkillBridge"},{name:"description",content:"Compare your skills with industry role requirements."},{property:"og:title",content:"Skill Gap Analysis — SkillBridge"},{property:"og:description",content:"See strengths, improvement areas, and missing skills."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary"}]}),component:SkillGapPage});
+import { createFileRoute } from "@tanstack/react-router";
+import { SkillGapPage } from "@/components/student-pages";
+export const Route = createFileRoute("/student/skill-gap")({
+  head: () => ({
+    meta: [
+      { title: "Skill Gap Analysis — SkillBridge" },
+      { name: "description", content: "Compare your skills with industry role requirements." },
+      { property: "og:title", content: "Skill Gap Analysis — SkillBridge" },
+      {
+        property: "og:description",
+        content: "See strengths, improvement areas, and missing skills.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: SkillGapPage,
+});
