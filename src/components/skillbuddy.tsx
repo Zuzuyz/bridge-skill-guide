@@ -15,7 +15,7 @@ import {
 } from "@/components/ai-elements/prompt-input";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Button } from "@/components/ui/button";
-import { askSkillBuddy } from "@/services/mock-api";
+import { askSkillBuddyServer } from "@/lib/skillbuddy-server";
 
 type ChatMessage = { id: string; role: "user" | "assistant"; content: string };
 const prompts = [
@@ -30,7 +30,7 @@ export function SkillBuddyChat({ embedded = false }: { embedded?: boolean }) {
       id: "welcome",
       role: "assistant",
       content:
-        "Hi Shubham — I’m SkillBuddy. I can explain your readiness, skill gaps, roadmap, and best-fit opportunities.",
+        "Hi Shubham — I’m SkillBuddy. I can explain your readiness, skill gaps, roadmap, and best-fit opportunities based on your actual verified skills and resume evidence.",
     },
   ]);
   const [status, setStatus] = useState<"ready" | "submitted">("ready");
@@ -41,12 +41,20 @@ export function SkillBuddyChat({ embedded = false }: { embedded?: boolean }) {
       { id: crypto.randomUUID(), role: "user", content: text },
     ]);
     setStatus("submitted");
-    const answer = await askSkillBuddy(text);
-    setMessages((current) => [
-      ...current,
-      { id: crypto.randomUUID(), role: "assistant", content: answer },
-    ]);
-    setStatus("ready");
+    try {
+      const answer = await askSkillBuddyServer({ data: { question: text } });
+      setMessages((current) => [
+        ...current,
+        { id: crypto.randomUUID(), role: "assistant", content: answer },
+      ]);
+    } catch (err: any) {
+      setMessages((current) => [
+        ...current,
+        { id: crypto.randomUUID(), role: "assistant", content: err?.message || "I had trouble connecting to your profile. Please try again." },
+      ]);
+    } finally {
+      setStatus("ready");
+    }
   };
   return (
     <div

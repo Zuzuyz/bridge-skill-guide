@@ -22,6 +22,8 @@ import { Brand } from "@/components/brand";
 import { ScoreRing, SkillBars } from "@/components/metrics";
 import { SkillBuddyFloating } from "@/components/skillbuddy";
 import { Button } from "@/components/ui/button";
+import { CelestialCosmos } from "@/components/ui/celestial-cosmos";
+import { CosmicParticles } from "@/components/ui/cosmic-particles";
 import { internships, roadmap, studentSkills } from "@/data/mock-data";
 
 const ecosystem = [
@@ -53,22 +55,25 @@ const ecosystem = [
 
 export function LandingPage() {
   const [menu, setMenu] = useState(false);
-  const topInternship = internships[0];
+  const topInternship = internships[0]!;
   return (
-    <div className="min-h-screen overflow-hidden">
-      <header className="sticky top-4 z-40 mx-auto mt-4 flex w-[calc(100%-2rem)] max-w-7xl items-center justify-between rounded-full border bg-card/90 px-4 py-3 shadow-sm backdrop-blur-md md:px-6">
+    <div className="relative min-h-screen bg-background text-foreground overflow-hidden">
+      {/* Background celestial ambient stars */}
+      <CelestialCosmos className="opacity-40" particleCount={100} showRings={false} />
+
+      <header className="sticky top-4 z-40 mx-auto mt-4 flex w-[calc(100%-2rem)] max-w-7xl items-center justify-between rounded-full border border-white/10 bg-card/85 px-4 py-3 shadow-lg backdrop-blur-xl md:px-6">
         <Brand />
         <nav className="hidden items-center gap-6 text-sm font-semibold text-muted-foreground md:flex">
-          <a href="#explore">Explore</a>
-          <a href="#skills">Skills</a>
-          <a href="#roadmap">Roadmap</a>
-          <Link to="/internships">Internships</Link>
+          <a href="#explore" className="hover:text-primary transition">Explore</a>
+          <a href="#skills" className="hover:text-primary transition">Skills</a>
+          <a href="#roadmap" className="hover:text-primary transition">Roadmap</a>
+          <Link to="/internships" className="hover:text-primary transition">Internships</Link>
         </nav>
         <div className="hidden items-center gap-2 sm:flex">
-          <Link to="/login" className="px-3 text-sm font-semibold">
+          <Link to="/login" className="px-3 text-sm font-semibold hover:text-primary transition">
             Log in
           </Link>
-          <Button asChild className="rounded-full">
+          <Button asChild className="rounded-full bg-primary text-primary-foreground hover:opacity-90 font-medium">
             <Link to="/register">
               Get started <ArrowRight />
             </Link>
@@ -95,9 +100,11 @@ export function LandingPage() {
           </nav>
         )}
       </header>
-      <main>
-        <section className="relative mx-auto max-w-7xl px-5 pb-20 pt-16 md:pt-20">
-          <div className="mx-auto max-w-4xl text-center">
+      <main className="relative z-10">
+        <section className="relative mx-auto max-w-7xl px-5 pb-20 pt-16 md:pt-20 overflow-hidden">
+          {/* Astrolabe solar mandala in hero */}
+          <CelestialCosmos className="opacity-80" particleCount={90} showRings={true} />
+          <div className="relative z-10 mx-auto max-w-4xl text-center">
             <span className="inline-flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-xs font-bold">
               <Bot className="size-4 text-secondary" /> Next-gen career operating system • Powered
               by AI

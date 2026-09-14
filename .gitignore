@@ -14,11 +14,18 @@ dist-ssr
 .vinxi
 .tanstack/**
 .nitro
+.env
+.env.*
+.env.local
 *.local
 
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
+
+# Vercel
+.vercel
+
 
 # Editor directories and files
 .vscode/*

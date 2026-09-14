@@ -1,5 +1,6 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
+  BarChart2,
   BarChart3,
   Bot,
   BriefcaseBusiness,
@@ -10,23 +11,35 @@ import {
   LogOut,
   Map,
   Menu,
-  Search,
+  CheckCircle2,
+  Award,
+  ShieldCheck,
+  Target,
+  TrendingUp,
   UserRound,
   Users,
   X,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
+import { CosmicParticles } from "@/components/ui/cosmic-particles";
 import { cn } from "@/lib/utils";
+import { storage } from "@/lib/storage";
+import { logout } from "@/lib/auth-server";
 
 const nav = {
   student: [
     ["Overview", "/student/dashboard", LayoutDashboard],
     ["My profile", "/student/profile", UserRound],
+    ["Career direction", "/student/careers", Target],
+    ["Industry demand", "/student/industry-demand", TrendingUp],
     ["Resume analysis", "/student/resume", FileSearch],
-    ["Skill profile", "/student/skills", BarChart3],
-    ["Skill gap", "/student/skill-gap", Search],
+    ["Skill inventory", "/student/skills", BarChart3],
+    ["Skill passport", "/student/passport", ShieldCheck],
+    ["Skill Assessments", "/student/assessments", CheckCircle2],
+    ["Skill gap & readiness", "/student/skill-gap", BarChart2],
+    ["Skill Development", "/student/skill-development", Award],
     ["Career roadmap", "/student/roadmap", Map],
     ["Internships", "/internships", BriefcaseBusiness],
     ["Applications", "/student/applications", GraduationCap],
@@ -45,21 +58,50 @@ const nav = {
 
 export function AppShell({
   role = "student",
-  title,
+  title = "SkillBridge",
   eyebrow,
   children,
   actions,
 }: {
   role?: keyof typeof nav;
-  title: string;
+  title?: string;
   eyebrow?: string;
   children: ReactNode;
   actions?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const [user, setUser] = useState(() => storage.getUser());
   const path = useRouterState({ select: (state) => state.location.pathname });
+
+  useEffect(() => {
+    setUser(storage.getUser());
+  }, [path]);
+
+  const displayName = user?.name || "Shubham Singh";
+  const initials =
+    displayName
+      .split(" ")
+      .filter(Boolean)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "SS";
+
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch {
+      // ignore
+    }
+    storage.setUser(null as any);
+    await navigate({ to: "/login" });
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative min-h-screen bg-background text-foreground overflow-x-hidden">
+      <CosmicParticles className="opacity-25" particleCount={50} />
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 w-72 border-r bg-card p-5 transition-transform lg:translate-x-0",
@@ -82,10 +124,10 @@ export function AppShell({
           <p className="text-xs font-bold uppercase text-muted-foreground">Your workspace</p>
           <div className="mt-3 flex items-center gap-3">
             <span className="flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground font-bold">
-              SS
+              {initials}
             </span>
             <div>
-              <strong className="block text-sm">Shubham Singh</strong>
+              <strong className="block text-sm">{displayName}</strong>
               <span className="text-xs capitalize text-muted-foreground">{role} account</span>
             </div>
           </div>
@@ -114,10 +156,14 @@ export function AppShell({
             <Bot className="size-4" />
             Ask SkillBuddy
           </Link>
-          <Link to="/" className="flex items-center gap-3 px-4 py-2 text-sm text-muted-foreground">
+          <button
+            type="button"
+            onClick={() => void handleLogout()}
+            className="flex w-full items-center gap-3 rounded-lg px-4 py-2 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
+          >
             <LogOut className="size-4" />
             Exit workspace
-          </Link>
+          </button>
         </div>
       </aside>
       <main className="lg:pl-72">

@@ -1,3 +1,17 @@
+import { resolve } from "node:path";
+import { existsSync } from "node:fs";
+
+if (!process.env["DATABASE_URL"]) {
+  try {
+    const envPath = resolve(process.cwd(), ".env");
+    if (existsSync(envPath) && typeof process.loadEnvFile === "function") {
+      process.loadEnvFile(envPath);
+    }
+  } catch {
+    // Ignore
+  }
+}
+
 import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";

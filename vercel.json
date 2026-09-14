@@ -1,0 +1,5 @@
+{
+  "buildCommand": "npx prisma generate && NITRO_PRESET=vercel npm run build",
+  "framework": null,
+  "installCommand": "npm install"
+}

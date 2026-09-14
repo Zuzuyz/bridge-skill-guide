@@ -1,0 +1,520 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  COMPANY
+  COLLEGE
+  ADMIN
+}
+
+enum ApplicationStatus {
+  APPLIED
+  UNDER_REVIEW
+  SHORTLISTED
+  INTERVIEW
+  SELECTED
+  REJECTED
+}
+
+enum InternshipMode {
+  REMOTE
+  HYBRID
+  ON_SITE
+}
+
+enum RoadmapStatus {
+  COMPLETE
+  CURRENT
+  UPCOMING
+}
+
+enum SkillGapStatus {
+  STRONG
+  NEEDS_IMPROVEMENT
+  MISSING
+}
+
+enum VerificationLevel {
+  RESUME_DETECTED
+  ASSESSMENT_VERIFIED
+  PROJECT_VERIFIED
+  INSTITUTION_VERIFIED
+  EMPLOYER_VERIFIED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  studentProfile StudentProfile?
+  company        Company?
+  college        College?
+
+  applications Application[]
+}
+
+model StudentProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  college            String?
+  targetRole         String?
+  readiness          Int      @default(0)
+  passportShareable  Boolean  @default(false)
+  passportShareToken String?  @unique
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills       StudentSkill[]
+  resumes      Resume[]
+  skillGaps    SkillGap[]
+  roadmapItems RoadmapItem[]
+  assessmentAttempts AssessmentAttempt[]
+  credentials        Credential[]
+  enrollments        LearningEnrollment[]
+  projectSubmissions ProjectSubmission[]
+  studentCareers     StudentCareer[]
+}
+
+model Company {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  name      String
+  industry  String?
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  internships Internship[]
+}
+
+model College {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  name               String
+  studentsCount      Int      @default(0)
+  placementReadiness Int      @default(0)
+  createdAt          DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Skill {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  demand    String?
+  createdAt DateTime @default(now())
+
+  studentSkills    StudentSkill[]
+  internshipSkills InternshipSkill[]
+  skillGaps        SkillGap[]
+  assessments      Assessment[]
+  careerSkills     CareerSkill[]
+  industryDemands  IndustryDemand[]
+}
+
+model StudentSkill {
+  id                      String            @id @default(cuid())
+  studentId               String
+  skillId                 String
+  score                   Int
+  confidence              Int?
+  evidence                String?
+  evidenceSource          String?           @default("Resume")
+  verificationLevel       VerificationLevel @default(RESUME_DETECTED)
+  lastDemonstratedAt      DateTime?
+  lastVerifiedAt          DateTime?
+  assessmentScore         Int?
+  projectEvidence         String?
+  institutionVerification String?
+  employerVerification    String?
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  skill   Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, skillId])
+}
+
+model Resume {
+  id            String   @id @default(cuid())
+  studentId     String
+  fileName      String
+  fileUrl       String?
+  extractedText String?
+  uploadedAt    DateTime @default(now())
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model SkillGap {
+  id        String         @id @default(cuid())
+  studentId String
+  skillId   String
+  score     Int            @default(0)
+  status    SkillGapStatus
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  skill   Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, skillId])
+}
+
+model RoadmapItem {
+  id         String        @id @default(cuid())
+  studentId  String
+  step       Int
+  skill      String
+  status     RoadmapStatus
+  difficulty String?
+  duration   String?
+  resource   String?
+  project    String?
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, step])
+}
+
+model Internship {
+  id          String         @id @default(cuid())
+  companyId   String
+  role        String
+  location    String?
+  mode        InternshipMode
+  duration    String?
+  stipend     String?
+  description String?
+  verified    Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  requiredSkills InternshipSkill[]
+  applications   Application[]
+}
+
+model InternshipSkill {
+  id           String  @id @default(cuid())
+  internshipId String
+  skillId      String
+  required     Boolean @default(true)
+
+  internship Internship @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+  skill      Skill      @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([internshipId, skillId])
+}
+
+model Application {
+  id           String            @id @default(cuid())
+  studentId    String
+  internshipId String
+  status       ApplicationStatus @default(APPLIED)
+  appliedAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  student    User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  internship Internship @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, internshipId])
+}
+
+enum QuestionType {
+  MCQ
+  CODING
+  SQL
+  SCENARIO
+  PRACTICAL
+}
+
+enum AssessmentDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum AssessmentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ProjectVerificationStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  VERIFIED
+  REJECTED
+}
+
+model Assessment {
+  id              String               @id @default(cuid())
+  title           String               @unique
+  skillName       String
+  skillId         String?
+  type            QuestionType         @default(MCQ) // MCQ | CODING | SQL | SCENARIO | PRACTICAL
+  category        String               @default("Technical") // "Technical" | "Aptitude" | "Soft Skills"
+  description     String
+  difficulty      String               @default("INTERMEDIATE") // "BEGINNER" | "INTERMEDIATE" | "ADVANCED"
+  passingScore    Int                  @default(70)
+  durationMinutes Int                  @default(20)
+  totalQuestions  Int                  @default(10)
+  language        String?              // "python" | "sql" | "javascript"
+  status          String               @default("PUBLISHED") // "DRAFT" | "PUBLISHED" | "ARCHIVED"
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @default(now()) @updatedAt
+
+  skill           Skill?               @relation(fields: [skillId], references: [id], onDelete: SetNull)
+  questions       AssessmentQuestion[]
+  attempts        AssessmentAttempt[]
+}
+
+model AssessmentQuestion {
+  id                String             @id @default(cuid())
+  assessmentId      String
+  question          String
+  questionType      QuestionType       @default(MCQ)
+  options           String[]           @default([])
+  correctAnswer     Int                @default(0) // Option Index (0-3) for MCQ
+  explanation       String?
+  points            Int                @default(10)
+  order             Int                @default(0)
+  difficulty        String             @default("MEDIUM") // "EASY" | "MEDIUM" | "HARD"
+  topic             String?
+  
+  // Phase 4B Coding & Practical fields
+  starterCode       String?
+  solutionCode      String?
+  language          String?            // "python" | "sql"
+  testCases         Json?              // [{ input, expectedOutput, isHidden, explanation, points }]
+  sampleInput       String?
+  sampleOutput      String?
+  constraints       String?
+  functionSignature String?
+  dbSchema          String?            // SQL DDL schema
+  initialDbData     String?            // SQL fixture data
+  scenarioContext   Json?              // Structured scenario metrics & incident info
+
+  assessment        Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  answers           AssessmentAnswer[]
+}
+
+model AssessmentAttempt {
+  id               String             @id @default(cuid())
+  studentId        String
+  assessmentId     String
+  score            Int                @default(0)
+  percentage       Int                @default(0)
+  passed           Boolean            @default(false)
+  startedAt        DateTime           @default(now())
+  completedAt      DateTime?
+  attemptNumber    Int                @default(1)
+  timeSpentSeconds Int                @default(0)
+  correctCount     Int                @default(0)
+  totalCount       Int                @default(0)
+  details          Json?
+
+  student          StudentProfile     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  assessment       Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  answers          AssessmentAnswer[]
+}
+
+model AssessmentAnswer {
+  id             String             @id @default(cuid())
+  attemptId      String
+  questionId     String
+  selectedOption Int?
+  answerText     String?            // Code string or SQL query string
+  isCorrect      Boolean            @default(false)
+  pointsEarned   Int                @default(0)
+
+  attempt        AssessmentAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question       AssessmentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+}
+
+model ProjectSubmission {
+  id            String                    @id @default(cuid())
+  studentId     String
+  title         String
+  description   String
+  skillName     String
+  projectUrl    String?
+  repoUrl       String?
+  evidenceText  String?
+  status        ProjectVerificationStatus @default(SUBMITTED)
+  reviewerNotes String?
+  score         Int?
+  submittedAt   DateTime                  @default(now())
+  verifiedAt    DateTime?
+
+  student       StudentProfile            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model Credential {
+  id        String         @id @default(cuid())
+  studentId String
+  title     String
+  type      String         // "ASSESSMENT" | "CERTIFICATE" | "PROJECT" | "BADGE"
+  issuer    String         @default("SkillBridge")
+  verified  Boolean        @default(true)
+  score     Int?
+  skills    String[]
+  issuedAt  DateTime       @default(now())
+  url       String?
+
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model LearningResource {
+  id          String   @id @default(cuid())
+  title       String
+  provider    String
+  skill       String
+  difficulty  String   // "Beginner" | "Intermediate" | "Advanced"
+  duration    String
+  type        String   // "Course" | "Interactive" | "Project"
+  description String
+  url         String
+  createdAt   DateTime @default(now())
+}
+
+model IndustryProgram {
+  id          String               @id @default(cuid())
+  company     String
+  title       String
+  duration    String
+  certificate Boolean              @default(true)
+  description String
+  skills      String[]
+  eligibility String               @default("All Students")
+  url         String?
+  createdAt   DateTime             @default(now())
+
+  enrollments LearningEnrollment[]
+}
+
+model LearningEnrollment {
+  id         String          @id @default(cuid())
+  studentId  String
+  programId  String
+  status     String          @default("ENROLLED") // "ENROLLED" | "IN_PROGRESS" | "COMPLETED"
+  enrolledAt DateTime        @default(now())
+
+  student    StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  program    IndustryProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, programId])
+}
+
+// ---------------------------------------------------------------------------
+// Phase 5A — Career Selection & Career Profile Models
+// ---------------------------------------------------------------------------
+
+model Career {
+  id              String          @id @default(cuid())
+  title           String          @unique
+  slug            String          @unique
+  description     String
+  category        String
+  isActive        Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  requiredSkills  CareerSkill[]
+  studentCareers  StudentCareer[]
+  industryDemands IndustryDemand[]
+}
+
+model CareerSkill {
+  id          String   @id @default(cuid())
+  careerId    String
+  skillId     String
+  importance  Int      @default(3) // 1=Nice to have, 2=Useful, 3=Important, 4=Very important, 5=Core skill
+
+  career      Career   @relation(fields: [careerId], references: [id], onDelete: Cascade)
+  skill       Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([careerId, skillId])
+}
+
+model StudentCareer {
+  id         String   @id @default(cuid())
+  studentId  String
+  careerId   String
+  isPrimary  Boolean  @default(false)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  student    StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  career     Career         @relation(fields: [careerId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, careerId])
+}
+
+// ---------------------------------------------------------------------------
+// Phase 6A — Industry Demand Data Models
+// ---------------------------------------------------------------------------
+
+enum DemandLevel {
+  HIGH
+  GROWING
+  EMERGING
+  STABLE
+  LOW
+}
+
+enum DemandSourceType {
+  DEMO
+  EMPLOYER_POSTINGS
+  INDUSTRY_REPORT
+  GOVERNMENT_DATA
+  PARTNER_DATA
+  MANUAL
+}
+
+model IndustryDemand {
+  id          String           @id @default(cuid())
+
+  careerId    String
+  skillId     String
+
+  demandLevel DemandLevel
+  demandScore Int?             // 0-100 index (NOT a percentage)
+
+  sourceType  DemandSourceType @default(DEMO)
+  sourceName  String?
+  sourceUrl   String?
+
+  collectedAt DateTime         @default(now())
+  validUntil  DateTime?
+
+  notes       String?
+
+  career      Career           @relation(fields: [careerId], references: [id], onDelete: Cascade)
+  skill       Skill            @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([careerId, skillId, sourceType])
+  @@index([careerId])
+  @@index([skillId])
+  @@index([sourceType])
+}
+
+
+

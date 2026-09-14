@@ -13,7 +13,7 @@ export async function extractSkills() {
 }
 export async function analyzeSkillGap(careerId: string): Promise<SkillGap[]> {
   await wait(450);
-  const career = careers.find((item) => item.id === careerId) ?? careers[0];
+  const career = careers.find((item) => item.id === careerId) ?? careers[0]!;
   return career.requiredSkills.map((skill) => {
     const current = studentSkills.find((item) => item.name === skill);
     const score = current?.score ?? 0;
