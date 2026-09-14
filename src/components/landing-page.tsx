@@ -7,15 +7,16 @@ import {
   Building2,
   CheckCircle2,
   CloudUpload,
-  FileSearch,
   GraduationCap,
   Menu,
-  Search,
   ShieldCheck,
   Target,
   TrendingUp,
   UserRound,
   X,
+  Sparkles,
+  Award,
+  Compass,
 } from "lucide-react";
 import { useState } from "react";
 import { Brand } from "@/components/brand";
@@ -23,39 +24,61 @@ import { ScoreRing, SkillBars } from "@/components/metrics";
 import { SkillBuddyFloating } from "@/components/skillbuddy";
 import { Button } from "@/components/ui/button";
 import { CelestialCosmos } from "@/components/ui/celestial-cosmos";
-import { CosmicParticles } from "@/components/ui/cosmic-particles";
-import { internships, roadmap, studentSkills } from "@/data/mock-data";
 
-const ecosystem = [
+const coreFeatures = [
   {
-    title: "Bridge Skill Gaps",
-    label: "For Students",
-    text: "Discover your gaps, follow AI roadmaps, and land verified internships.",
-    badge: "Track readiness 72%",
-    icon: UserRound,
-    tone: "bg-primary/20 text-primary-foreground",
+    title: "Career Direction & Target Role",
+    label: "Explore 22+ Paths",
+    text: "Select your target career path across AI/ML, Full-Stack, Cloud, Data, and Cybersecurity to get precise skill requirements.",
+    icon: Compass,
+    tone: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+    link: "/student/careers",
   },
   {
-    title: "Empower Cohorts",
-    label: "For Colleges",
-    text: "Benchmark student readiness against live industry demand and improve placements.",
-    badge: "68% placement ready",
-    icon: Building2,
-    tone: "bg-accent text-accent-foreground",
+    title: "Practical Skill Assessments",
+    label: "Verify Competency",
+    text: "Demonstrate real proficiency through standardized MCQ, Python Code Sandboxes, and interactive SQL execution challenges.",
+    icon: CheckCircle2,
+    tone: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+    link: "/student/assessments",
   },
   {
-    title: "Hire Verified Talent",
-    label: "For Companies",
-    text: "Find students by verified skill competency and shorten hiring cycles.",
-    badge: "18 roles • 94% match",
+    title: "Live Industry Demand Benchmarks",
+    label: "Market Intelligence",
+    text: "View real-time skill demand scores and market growth tiers mapped across high-growth technology careers.",
+    icon: TrendingUp,
+    tone: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+    link: "/student/industry-demand",
+  },
+  {
+    title: "Explainable Skill Gap & Readiness",
+    label: "Deterministic Math",
+    text: "Understand exact gaps with transparent formula calculations weighted by importance and verified evidence.",
+    icon: BarChart3,
+    tone: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+    link: "/student/skill-gap",
+  },
+  {
+    title: "AI Resume Skill Extraction",
+    label: "Instant Analysis",
+    text: "Upload your resume to automatically extract, categorize, and benchmark your existing technical skill proficiencies.",
+    icon: CloudUpload,
+    tone: "bg-pink-500/20 text-pink-300 border-pink-500/30",
+    link: "/student/resume",
+  },
+  {
+    title: "Verified Internship Matches",
+    label: "Direct Placements",
+    text: "Connect directly with verified hiring partners based on your proven skill score rather than raw keyword matches.",
     icon: BriefcaseBusiness,
-    tone: "bg-success/20 text-success-foreground",
+    tone: "bg-amber-400/20 text-amber-200 border-amber-400/30",
+    link: "/internships",
   },
 ];
 
 export function LandingPage() {
   const [menu, setMenu] = useState(false);
-  const topInternship = internships[0]!;
+
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-hidden">
       {/* Background celestial ambient stars */}
@@ -64,9 +87,9 @@ export function LandingPage() {
       <header className="sticky top-4 z-40 mx-auto mt-4 flex w-[calc(100%-2rem)] max-w-7xl items-center justify-between rounded-full border border-white/10 bg-card/85 px-4 py-3 shadow-lg backdrop-blur-xl md:px-6">
         <Brand />
         <nav className="hidden items-center gap-6 text-sm font-semibold text-muted-foreground md:flex">
-          <a href="#explore" className="hover:text-primary transition">Explore</a>
-          <a href="#skills" className="hover:text-primary transition">Skills</a>
-          <a href="#roadmap" className="hover:text-primary transition">Roadmap</a>
+          <a href="#features" className="hover:text-primary transition">Features</a>
+          <Link to="/student/careers" className="hover:text-primary transition">Careers</Link>
+          <Link to="/student/assessments" className="hover:text-primary transition">Assessments</Link>
           <Link to="/internships" className="hover:text-primary transition">Internships</Link>
         </nav>
         <div className="hidden items-center gap-2 sm:flex">
@@ -90,333 +113,136 @@ export function LandingPage() {
         </Button>
         {menu && (
           <nav className="absolute left-0 right-0 top-16 mx-2 grid gap-2 rounded-xl border bg-card p-4 shadow-xl sm:hidden">
-            <a href="#explore">Explore</a>
-            <a href="#skills">Skills</a>
-            <Link to="/internships">Internships</Link>
-            <Link to="/login">Log in</Link>
+            <a href="#features" onClick={() => setMenu(false)}>Features</a>
+            <Link to="/student/careers" onClick={() => setMenu(false)}>Careers</Link>
+            <Link to="/student/assessments" onClick={() => setMenu(false)}>Assessments</Link>
+            <Link to="/internships" onClick={() => setMenu(false)}>Internships</Link>
+            <Link to="/login" onClick={() => setMenu(false)}>Log in</Link>
             <Button asChild>
-              <Link to="/register">Get started</Link>
+              <Link to="/register" onClick={() => setMenu(false)}>Get started</Link>
             </Button>
           </nav>
         )}
       </header>
+
       <main className="relative z-10">
-        <section className="relative mx-auto max-w-7xl px-5 pb-20 pt-16 md:pt-20 overflow-hidden">
-          {/* Astrolabe solar mandala in hero */}
+        {/* Clean Hero Section */}
+        <section className="relative mx-auto max-w-7xl px-5 pb-16 pt-16 md:pt-24 overflow-hidden">
           <CelestialCosmos className="opacity-80" particleCount={90} showRings={true} />
           <div className="relative z-10 mx-auto max-w-4xl text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-xs font-bold">
-              <Bot className="size-4 text-secondary" /> Next-gen career operating system • Powered
-              by AI
+            <span className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-bold text-amber-300">
+              <Sparkles className="size-4 text-amber-400" /> Academia × Industry Skill Intelligence
             </span>
-            <h1 className="mt-7 font-display text-4xl font-extrabold leading-tight md:text-6xl">
-              Build the skills. Connect with industry.{" "}
-              <span className="text-secondary underline decoration-primary decoration-wavy">
-                Launch your career.
-              </span>
+            <h1 className="mt-7 font-display text-4xl font-extrabold leading-tight md:text-6xl text-white">
+              Choose your career path.{" "}
+              <span className="bg-gradient-to-r from-amber-300 via-pink-300 to-cyan-300 bg-clip-text text-transparent">
+                Prove your skills.
+              </span>{" "}
+              Get hired.
             </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
-              SkillBridge connects students, colleges, and companies through AI-powered skill
-              mapping, personalized roadmaps, and verified opportunities.
+            <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300 font-light">
+              SkillBridge connects students with verified skills to top hiring opportunities through objective assessments, transparent readiness scoring, and live industry demand.
             </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <Button size="lg" className="h-13 rounded-full px-7" asChild>
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <Button size="lg" className="h-13 rounded-full px-8 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-950/40 hover:from-amber-300 hover:to-amber-400" asChild>
                 <Link to="/register">
-                  Start Your Journey <ArrowRight />
+                  Choose Career Path <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="h-13 rounded-full px-7" asChild>
-                <Link to="/internships">Explore Opportunities</Link>
+              <Button size="lg" variant="outline" className="h-13 rounded-full px-8 border-white/20 bg-white/5 text-white hover:bg-white/10" asChild>
+                <Link to="/student/assessments">Take Skill Assessment</Link>
               </Button>
-            </div>
-            <p className="mt-7 inline-flex rounded-full border bg-card px-5 py-2 text-xs text-muted-foreground shadow-sm">
-              <strong className="mr-1 text-foreground">120,000+</strong> Students •{" "}
-              <strong className="mx-1 text-foreground">450+</strong> Colleges •{" "}
-              <strong className="mx-1 text-foreground">1,200+</strong> Hiring Partners
-            </p>
-          </div>
-          <div className="relative mx-auto mt-14 max-w-5xl rounded-2xl border bg-card p-5 lift-shadow md:p-8">
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b pb-6">
-              <div className="flex items-center gap-4">
-                <span className="flex size-14 items-center justify-center rounded-full bg-accent font-display font-bold text-secondary">
-                  SS
-                </span>
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="font-display text-lg font-bold">Shubham Singh</h2>
-                    <span className="rounded-full bg-success/20 px-2.5 py-1 text-xs font-bold text-success-foreground">
-                      Verified Student
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    B.Tech Computer Science • 7th Semester • IIT Delhi
-                  </p>
-                </div>
-              </div>
-              <span className="rounded-full bg-muted px-3 py-2 text-xs font-bold text-secondary">
-                AI Engineer Target
-              </span>
-            </div>
-            <div className="grid gap-8 pt-7 md:grid-cols-[.65fr_1.35fr]">
-              <div className="flex items-center justify-center rounded-xl border bg-muted/60 p-6">
-                <ScoreRing score={72} />
-              </div>
-              <div>
-                <div className="mb-5 flex items-center justify-between">
-                  <h3 className="font-display font-bold">Top detected skills</h3>
-                  <span className="text-xs font-bold text-secondary">5 evaluated</span>
-                </div>
-                <SkillBars skills={studentSkills} />
-              </div>
-            </div>
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/40 bg-warning p-4 text-sm">
-              <div>
-                <strong>Actionable gap alert:</strong> Deep Learning, TensorFlow and MLOps are
-                missing.
-              </div>
-              <Link to="/student/skill-gap" className="font-bold">
-                Bridge gaps →
-              </Link>
-            </div>
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-4 rounded-xl border p-4">
-              <div className="flex items-center gap-3">
-                <span className="flex size-12 items-center justify-center rounded-full bg-secondary font-bold text-secondary-foreground">
-                  H
-                </span>
-                <div>
-                  <strong>{topInternship.role}</strong>
-                  <p className="text-sm text-muted-foreground">
-                    {topInternship.company} • {topInternship.location} ({topInternship.mode})
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="rounded-full bg-success/20 px-3 py-1 text-xs font-bold text-success-foreground">
-                  {topInternship.match}% skill match
-                </span>
-                <Button asChild className="rounded-full">
-                  <Link to="/internships/$id" params={{ id: topInternship.id }}>
-                    View role
-                  </Link>
-                </Button>
-              </div>
             </div>
           </div>
         </section>
-        <section id="explore" className="mx-auto max-w-7xl px-5 py-20">
+
+        {/* Clean Features Grid - Only Important App Features */}
+        <section id="features" className="mx-auto max-w-7xl px-5 py-16">
           <div className="mx-auto mb-12 max-w-2xl text-center">
-            <h2 className="font-display text-4xl font-bold">Trusted Career Ecosystem</h2>
-            <p className="mt-4 text-muted-foreground">
-              One connected system for learning, talent intelligence, and high-quality hiring
-              outcomes.
+            <p className="text-xs font-semibold uppercase tracking-widest text-amber-400">
+              Core Capabilities
+            </p>
+            <h2 className="mt-2 font-display text-3xl font-bold text-white sm:text-4xl">
+              Everything you need to launch your career
+            </h2>
+            <p className="mt-3 text-slate-400 text-sm sm:text-base">
+              Explore your target direction, verify your competencies, and match with verified partner roles.
             </p>
           </div>
-          <div className="grid gap-6 md:grid-cols-3">
-            {ecosystem.map(({ title, label, text, badge, icon: Icon, tone }) => (
-              <article
-                key={label}
-                className="group rounded-2xl border bg-card p-7 soft-shadow transition hover:-translate-y-1 hover:shadow-xl"
+
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {coreFeatures.map(({ title, label, text, icon: Icon, tone, link }) => (
+              <Link
+                key={title}
+                to={link}
+                className="group rounded-3xl border border-white/10 bg-[#0c0919]/90 p-7 shadow-xl shadow-black/40 backdrop-blur-xl transition hover:-translate-y-1 hover:border-amber-500/30 flex flex-col justify-between"
               >
-                <span className={`flex size-12 items-center justify-center rounded-full ${tone}`}>
-                  <Icon className="size-5" />
-                </span>
-                <p className="mt-6 text-xs font-bold uppercase text-secondary">{label}</p>
-                <h3 className="mt-2 text-xl font-bold">{title}</h3>
-                <p className="mt-3 leading-7 text-muted-foreground">{text}</p>
-                <div className="mt-7 border-t pt-5">
-                  <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${tone}`}>
-                    {badge}
-                  </span>
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className={`flex size-12 items-center justify-center rounded-2xl border ${tone}`}>
+                      <Icon className="size-6" />
+                    </span>
+                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-300">
+                      {label}
+                    </span>
+                  </div>
+                  <h3 className="mt-6 text-xl font-bold text-white group-hover:text-amber-300 transition">
+                    {title}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-slate-400">
+                    {text}
+                  </p>
                 </div>
-              </article>
+                <div className="mt-6 pt-4 border-t border-white/5 flex items-center gap-2 text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform">
+                  <span>Explore feature</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </div>
+              </Link>
             ))}
           </div>
         </section>
-        <section
-          id="skills"
-          className="mx-auto max-w-7xl rounded-2xl bg-muted/70 px-5 py-16 md:px-12"
-        >
-          <div className="grid items-center gap-10 lg:grid-cols-2">
-            <div>
-              <span className="inline-flex items-center gap-2 rounded-full border bg-card px-3 py-1 text-xs font-bold uppercase">
-                <TrendingUp className="size-4" /> Market intelligence
-              </span>
-              <h2 className="mt-5 text-4xl font-bold">Know what industry needs.</h2>
-              <p className="mt-4 text-lg leading-8 text-muted-foreground">
-                Live market intelligence mapped from 50,000+ tech job postings across leading
-                startups and enterprises.
-              </p>
-              <div className="mt-7 flex flex-wrap gap-2">
-                {[
-                  "Python • High demand",
-                  "SQL • High demand",
-                  "Generative AI • Emerging",
-                  "Cloud / AWS • Growing",
-                  "React • High demand",
-                  "MLOps • Growing",
-                ].map((item) => (
-                  <span
-                    key={item}
-                    className="rounded-full border bg-card px-4 py-2 text-sm font-semibold shadow-sm"
-                  >
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="rounded-2xl border bg-card p-7 lift-shadow">
-              <div className="mb-6 flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold">Industry Skill Demand Index</h3>
-                  <p className="text-xs text-muted-foreground">Updated today • Q3 benchmark</p>
-                </div>
-                <BarChart3 className="text-secondary" />
-              </div>
-              <SkillBars
-                skills={[
-                  { id: "p", name: "Python & Data", score: 94 },
-                  { id: "a", name: "AI/ML Engineering", score: 91 },
-                  { id: "c", name: "Cloud Architectures", score: 85 },
-                  { id: "s", name: "SQL & Warehousing", score: 82 },
-                  { id: "cy", name: "Cybersecurity", score: 78 },
-                ]}
-              />
-            </div>
-          </div>
-        </section>
-        <section className="mx-auto max-w-7xl px-5 py-20">
-          <div className="text-center">
-            <span className="rounded-full bg-accent px-4 py-2 text-xs font-bold uppercase text-accent-foreground">
-              AI Resume Skill Parser
-            </span>
-            <h2 className="mt-5 text-4xl font-bold">Turn your resume into a live skill profile.</h2>
-          </div>
-          <div className="mt-12 grid gap-7 lg:grid-cols-2">
-            <div className="flex min-h-80 flex-col items-center justify-center rounded-2xl border-2 border-dashed bg-card p-8 text-center">
-              <span className="flex size-16 items-center justify-center rounded-full bg-primary/20 text-primary-foreground">
-                <CloudUpload className="size-8" />
-              </span>
-              <h3 className="mt-5 text-xl font-bold">Drop your resume here</h3>
-              <p className="mt-2 text-sm text-muted-foreground">PDF or DOCX up to 15MB</p>
-              <Button className="mt-6 rounded-full" asChild>
-                <Link to="/student/resume">Analyze my resume</Link>
-              </Button>
-            </div>
-            <div className="rounded-2xl border bg-card p-7 lift-shadow">
-              <div className="flex items-start justify-between border-b pb-5">
-                <div>
-                  <p className="text-xs font-bold uppercase text-success">AI extraction complete</p>
-                  <h3 className="mt-1 text-xl font-bold">10 technical skills mapped</h3>
-                </div>
-                <span className="rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground">
-                  98.4% confidence
-                </span>
-              </div>
-              <div className="mt-5 space-y-3">
-                {studentSkills.slice(0, 4).map((skill) => (
-                  <div
-                    key={skill.id}
-                    className="flex items-center justify-between rounded-lg bg-muted p-3"
-                  >
-                    <span className="font-semibold">{skill.name}</span>
-                    <span className="rounded-full bg-success/20 px-2 py-1 text-xs font-bold text-success-foreground">
-                      {skill.confidence}% confidence
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-        <section id="roadmap" className="border-y bg-card py-20">
-          <div className="mx-auto max-w-7xl px-5">
-            <div className="grid gap-10 lg:grid-cols-[.7fr_1.3fr]">
-              <div>
-                <span className="text-xs font-bold uppercase text-secondary">
-                  Your next best move
-                </span>
-                <h2 className="mt-3 text-4xl font-bold">A career roadmap that evolves with you.</h2>
-                <p className="mt-4 leading-7 text-muted-foreground">
-                  Every step links a demanded skill to a practical resource, proof project, and
-                  opportunity.
-                </p>
-                <Button asChild className="mt-7 rounded-full">
-                  <Link to="/student/roadmap">
-                    Open full roadmap <ArrowRight />
-                  </Link>
-                </Button>
-              </div>
-              <div className="space-y-3">
-                {roadmap.slice(0, 4).map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center gap-4 rounded-xl border bg-background p-4"
-                  >
-                    <span
-                      className={
-                        item.status === "complete"
-                          ? "flex size-9 items-center justify-center rounded-full bg-success text-success-foreground"
-                          : "flex size-9 items-center justify-center rounded-full bg-accent font-bold text-accent-foreground"
-                      }
-                    >
-                      {item.status === "complete" ? <CheckCircle2 className="size-5" /> : item.step}
-                    </span>
-                    <div className="flex-1">
-                      <strong>{item.skill}</strong>
-                      <p className="text-xs text-muted-foreground">
-                        {item.difficulty} • {item.duration}
-                      </p>
-                    </div>
-                    <ArrowRight className="size-4 text-muted-foreground" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-        <section className="mx-auto max-w-7xl px-5 py-20">
-          <div className="rounded-2xl bg-foreground p-10 text-center text-background lift-shadow md:p-16">
-            <span className="rounded-full border border-background/20 px-4 py-2 text-xs font-bold uppercase">
-              Launch with SkillBridge OS
-            </span>
-            <h2 className="mx-auto mt-7 max-w-3xl text-4xl font-bold md:text-5xl">
-              Bridge your academia to industry today.
-            </h2>
-            <p className="mx-auto mt-5 max-w-xl text-background/70">
-              Join ambitious students and top campus recruiting teams accelerating real career
-              outcomes.
+
+        {/* Call to Action Banner */}
+        <section className="mx-auto max-w-7xl px-5 py-16">
+          <div className="rounded-3xl border border-amber-500/30 bg-gradient-to-br from-amber-950/30 via-[#0c0919] to-purple-950/30 p-10 text-center shadow-2xl md:p-14">
+            <p className="text-xs font-bold uppercase tracking-widest text-amber-400">
+              Ready to start?
             </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
-              <Button size="lg" className="rounded-full" asChild>
+            <h2 className="mx-auto mt-3 max-w-2xl text-3xl font-bold text-white md:text-4xl">
+              Take your first career skill assessment today.
+            </h2>
+            <p className="mx-auto mt-4 max-w-lg text-slate-300 text-sm">
+              Create an account, pick your target career path, and benchmark your knowledge with interactive coding and technical tests.
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <Button size="lg" className="rounded-full px-8 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold hover:from-amber-300" asChild>
                 <Link to="/register">
-                  Claim your career bridge <ArrowRight />
+                  Get Started Now <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="rounded-full border-background/30 bg-background/10 text-background hover:bg-background/20 hover:text-background"
-                asChild
-              >
-                <Link to="/college/dashboard">View college experience</Link>
+              <Button size="lg" variant="outline" className="rounded-full border-white/20 bg-white/5 text-white hover:bg-white/10" asChild>
+                <Link to="/login">Sign In</Link>
               </Button>
             </div>
           </div>
         </section>
       </main>
-      <footer className="border-t bg-muted/70">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 px-5 py-10 md:flex-row">
+
+      <footer className="border-t border-white/10 bg-[#05040a] py-8">
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-5 sm:flex-row">
           <Brand compact />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-slate-500">
             © 2026 SkillBridge. Bridging Academia and Industry.
           </p>
-          <nav className="flex gap-5 text-xs font-semibold text-muted-foreground">
-            <Link to="/internships">Opportunities</Link>
-            <Link to="/login">Sign in</Link>
-            <Link to="/register">Join</Link>
+          <nav className="flex gap-5 text-xs font-semibold text-slate-400">
+            <Link to="/student/careers" className="hover:text-white">Careers</Link>
+            <Link to="/student/assessments" className="hover:text-white">Assessments</Link>
+            <Link to="/internships" className="hover:text-white">Internships</Link>
+            <Link to="/login" className="hover:text-white">Sign in</Link>
           </nav>
         </div>
       </footer>
+
       <SkillBuddyFloating />
     </div>
   );

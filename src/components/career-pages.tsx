@@ -257,15 +257,26 @@ export function CareersCatalogPage({
                       {primaryCareer.studentStatus?.evidenceCoveredSkillsCount} of {primaryCareer.totalSkillsCount} skills
                     </strong>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleOpenDetail(primaryCareer.slug)}
-                    className="w-full text-xs text-emerald-300 hover:bg-emerald-500/20"
-                  >
-                    View Career Requirements
-                    <ChevronRight className="ml-1 h-3.5 w-3.5" />
-                  </Button>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleOpenDetail(primaryCareer.slug)}
+                      className="text-xs text-emerald-300 hover:bg-emerald-500/20"
+                    >
+                      Requirements
+                      <ChevronRight className="ml-1 h-3 w-3" />
+                    </Button>
+                    <Link to="/student/assessments">
+                      <Button
+                        size="sm"
+                        className="w-full text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-sm"
+                      >
+                        <Award className="mr-1 h-3.5 w-3.5" />
+                        Take Assessment
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               ) : (
                 <div className="rounded-2xl border border-dashed border-white/20 p-4 text-center space-y-2 flex flex-col justify-center items-center text-xs text-white/50">

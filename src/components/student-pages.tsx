@@ -415,33 +415,46 @@ export function StudentDashboard() {
               </div>
 
               {data.careerDirection?.primary ? (
-                <div className="mt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div>
-                    <h3 className="text-xl font-serif font-bold text-white">
-                      {data.careerDirection.primary.title}
-                    </h3>
-                    <p className="text-xs text-slate-300 mt-0.5">
-                      {data.careerDirection.primary.evidenceCoveredSkillsCount} of{" "}
-                      {data.careerDirection.primary.totalRequiredSkillsCount} core skills backed by evidence
-                    </p>
+                <div className="mt-2 flex flex-col gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-xl font-serif font-bold text-white">
+                        {data.careerDirection.primary.title}
+                      </h3>
+                      <p className="text-xs text-slate-300 mt-0.5">
+                        {data.careerDirection.primary.evidenceCoveredSkillsCount} of{" "}
+                        {data.careerDirection.primary.totalRequiredSkillsCount} core skills backed by evidence
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-lg bg-emerald-500/20 border border-emerald-500/40 px-3 py-1 text-xs font-semibold text-emerald-300">
-                      {data.careerDirection.primary.totalRequiredSkillsCount > 0
-                        ? Math.round(
-                            (data.careerDirection.primary.evidenceCoveredSkillsCount /
-                              data.careerDirection.primary.totalRequiredSkillsCount) *
-                              100
-                          )
-                        : 0}
-                      % Evidenced
+                  <div className="pt-3 border-t border-amber-400/20 flex flex-wrap items-center justify-between gap-3">
+                    <span className="text-xs text-amber-200/80">
+                      Take interactive MCQ, Python, or SQL tests mapped to this path.
                     </span>
+                    <Link
+                      to="/student/assessments"
+                      className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 px-4 py-2 text-xs font-bold text-slate-950 shadow-md transition"
+                    >
+                      <Award className="h-4 w-4" />
+                      Take Skill Assessment
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
                   </div>
                 </div>
               ) : (
-                <div className="mt-3 text-slate-400 text-sm">
-                  No primary career chosen yet. <Link to="/student/careers" className="text-amber-300 underline">Select primary career</Link>
+                <div className="mt-4 rounded-xl border border-dashed border-amber-400/40 bg-amber-500/5 p-4 text-center space-y-2">
+                  <p className="text-sm font-semibold text-white">No primary career chosen yet</p>
+                  <p className="text-xs text-slate-300">
+                    Choose your target career path to unlock tailored skill requirements and interactive assessments.
+                  </p>
+                  <Link
+                    to="/student/careers"
+                    className="inline-flex items-center gap-2 mt-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 px-4 py-2 text-xs font-bold text-slate-950 shadow-sm"
+                  >
+                    <span>Choose Career Path</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
                 </div>
               )}
             </div>

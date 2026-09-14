@@ -32,7 +32,6 @@ export async function registerUser(
         ? {
             studentProfile: {
               create: {
-                targetRole: "AI Engineer",
                 readiness: 0,
               },
             },

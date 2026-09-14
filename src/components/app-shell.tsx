@@ -77,7 +77,7 @@ export function AppShell({
     setUser(storage.getUser());
   }, [path]);
 
-  const displayName = user?.name || "Shubham Singh";
+  const displayName = user?.name || "User";
   const initials =
     displayName
       .split(" ")
@@ -85,7 +85,7 @@ export function AppShell({
       .map((part) => part[0])
       .join("")
       .toUpperCase()
-      .slice(0, 2) || "SS";
+      .slice(0, 2) || "U";
 
   const navigate = useNavigate();
 
@@ -104,11 +104,11 @@ export function AppShell({
       <CosmicParticles className="opacity-25" particleCount={50} />
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-72 border-r bg-card p-5 transition-transform lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-50 flex h-full w-72 flex-col border-r bg-card p-5 transition-transform lg:translate-x-0 shadow-xl",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between shrink-0">
           <Brand />
           <Button
             variant="ghost"
@@ -120,38 +120,44 @@ export function AppShell({
             <X />
           </Button>
         </div>
-        <div className="mt-10 rounded-xl bg-muted p-4">
+
+        <div className="mt-6 rounded-xl bg-muted p-4 shrink-0">
           <p className="text-xs font-bold uppercase text-muted-foreground">Your workspace</p>
           <div className="mt-3 flex items-center gap-3">
             <span className="flex size-10 items-center justify-center rounded-full bg-secondary text-secondary-foreground font-bold">
               {initials}
             </span>
-            <div>
-              <strong className="block text-sm">{displayName}</strong>
+            <div className="overflow-hidden">
+              <strong className="block truncate text-sm">{displayName}</strong>
               <span className="text-xs capitalize text-muted-foreground">{role} account</span>
             </div>
           </div>
         </div>
-        <nav className="mt-7 space-y-1" aria-label={`${role} navigation`}>
+
+        <nav
+          className="mt-6 flex-1 space-y-1 overflow-y-auto pr-1 pb-4 scrollbar-thin scrollbar-thumb-white/10"
+          aria-label={`${role} navigation`}
+        >
           {nav[role].map(([label, to, Icon]) => (
             <Link
               key={to}
               to={to}
               onClick={() => setOpen(false)}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-                path === to && "bg-accent text-accent-foreground",
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                path === to && "bg-accent text-accent-foreground font-bold",
               )}
             >
-              <Icon className="size-4" />
-              {label}
+              <Icon className="size-4 shrink-0" />
+              <span className="truncate">{label}</span>
             </Link>
           ))}
         </nav>
-        <div className="absolute inset-x-5 bottom-5 space-y-2">
+
+        <div className="mt-auto shrink-0 pt-4 border-t border-white/10 space-y-2">
           <Link
             to="/ai-assistant"
-            className="flex items-center gap-3 rounded-lg bg-primary px-4 py-3 text-sm font-bold text-primary-foreground"
+            className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground shadow-sm hover:opacity-95 transition"
           >
             <Bot className="size-4" />
             Ask SkillBuddy
@@ -159,7 +165,7 @@ export function AppShell({
           <button
             type="button"
             onClick={() => void handleLogout()}
-            className="flex w-full items-center gap-3 rounded-lg px-4 py-2 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            className="flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground"
           >
             <LogOut className="size-4" />
             Exit workspace
