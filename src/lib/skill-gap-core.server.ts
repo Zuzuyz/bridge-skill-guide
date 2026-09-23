@@ -489,7 +489,7 @@ export async function analyzeStudentSkillGapInternal() {
   if (!careerId) {
     /* Return empty legacy-shaped result */
     return {
-      targetRole: student.targetRole ?? "AI Engineer",
+      targetRole: student.targetRole ?? null,
       readiness: student.readiness ?? 0,
       gaps: [],
       explanation: {

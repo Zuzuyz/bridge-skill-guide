@@ -30,8 +30,7 @@ import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { CosmicParticles } from "@/components/ui/cosmic-particles";
 import { cn } from "@/lib/utils";
-import { storage } from "@/lib/storage";
-import { logout } from "@/lib/auth-server";
+import { getCurrentUser, logout } from "@/lib/auth-server";
 
 const nav = {
   student: [
@@ -88,14 +87,28 @@ export function AppShell({
   actions?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const [user, setUser] = useState(() => storage.getUser());
+  const [user, setUser] = useState<{ id: string; name: string; role: string } | null>(
+    null,
+  );
 
   const path = useRouterState({
     select: (state) => state.location.pathname,
   });
 
+  // Identity comes from the real HTTP-only session (cookie → verifySession).
+  // Re-fetched on route change so a login/logout elsewhere updates the shell.
   useEffect(() => {
-    setUser(storage.getUser());
+    let cancelled = false;
+    getCurrentUser()
+      .then((result) => {
+        if (!cancelled) setUser(result);
+      })
+      .catch(() => {
+        if (!cancelled) setUser(null);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [path]);
 
   const displayName = user?.name || "User";
@@ -115,10 +128,10 @@ export function AppShell({
     try {
       await logout();
     } catch {
-      // Ignore logout errors and clear the local session.
+      // Ignore logout errors; the server cookie deletion is best-effort.
     }
 
-    storage.setUser(null as any);
+    setUser(null);
 
     await navigate({
       to: "/login",
@@ -271,7 +284,7 @@ export function AppShell({
             {actions}
 
             <span className="hidden rounded-full bg-success/20 px-3 py-1.5 text-xs font-bold text-success-foreground sm:block">
-              Profile 84% complete
+              SkillBridge workspace
             </span>
           </div>
         </header>

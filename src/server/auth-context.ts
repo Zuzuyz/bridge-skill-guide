@@ -47,24 +47,19 @@ export async function getAuthenticatedStudentProfile<
 >(include?: T) {
   const sessionUser = await getCurrentSessionUser();
 
-  if (sessionUser) {
-    const student = await prisma.studentProfile.findUnique({
-      where: {
-        userId: sessionUser.id,
-      },
-      ...(include ? { include } : {}),
-    });
-
-    if (student) {
-      return student;
-    }
+  // No authenticated session → no student data. There is deliberately
+  // no fallback: every caller receives data belonging ONLY to the
+  // authenticated user, or null.
+  if (!sessionUser) {
+    return null;
   }
 
-  // Preserves existing demo functionality when no session is active
-  return prisma.studentProfile.findFirst({
-    orderBy: {
-      createdAt: "desc",
+  const student = await prisma.studentProfile.findUnique({
+    where: {
+      userId: sessionUser.id,
     },
     ...(include ? { include } : {}),
   });
+
+  return student;
 }

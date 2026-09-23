@@ -706,7 +706,7 @@ export function ProfilePage() {
     email: string;
     college: string | null;
     targetRole: string | null;
-    readiness: number;
+    readiness: number | null;
     skillsCount: number;
     verificationStats: {
       resumeDetected: number;
@@ -760,13 +760,16 @@ export function ProfilePage() {
     };
   }, []);
 
-  const name = profile?.name ?? "Shubham Singh";
-  const email = profile?.email ?? "student@skillbridge.demo";
-  const college = profile?.college ?? "IIT Delhi";
-  const targetRole = profile?.targetRole ?? "your career";
-  const readiness = profile?.readiness && profile.readiness > 0 ? profile.readiness : 84;
+  // Identity and metrics render ONLY real database values — no fake
+  // fallbacks. Empty profile fields display honest neutral states.
+  const name = profile?.name ?? null;
+  const email = profile?.email ?? null;
+  const college = profile?.college ?? null;
+  const targetRole = profile?.targetRole ?? null;
+  const readiness =
+    profile?.readiness && profile.readiness > 0 ? profile.readiness : null;
   const vStats = profile?.verificationStats ?? {
-    resumeDetected: 32,
+    resumeDetected: 0,
     assessmentVerified: 0,
     projectVerified: 0,
     institutionVerified: 0,
@@ -774,12 +777,14 @@ export function ProfilePage() {
   };
   const initials =
     name
-      .split(" ")
-      .filter(Boolean)
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2) || "SS";
+      ? name
+          .split(" ")
+          .filter(Boolean)
+          .map((part) => part[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2)
+      : null;
 
   return (
     <AppShell>
@@ -790,10 +795,10 @@ export function ProfilePage() {
           <div>
             <h2 className="text-xl font-bold text-white">Personal Information</h2>
             <div className="mt-6 grid gap-5 md:grid-cols-2">
-              <Field label="Full Name" value={name} />
-              <Field label="Email" value={email} />
-              <Field label="College / University" value={college} />
-              <Field label="Target Career" value={targetRole} />
+              <Field label="Full Name" value={name ?? "Not provided"} />
+              <Field label="Email" value={email ?? "Not provided"} />
+              <Field label="College / University" value={college ?? "College not provided"} />
+              <Field label="Target Career" value={targetRole ?? "Career target not set"} />
             </div>
           </div>
 
@@ -841,19 +846,25 @@ export function ProfilePage() {
 
         <Card className="text-center">
           <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-tr from-amber-400 to-pink-500 text-3xl font-serif font-bold text-slate-950 shadow-xl shadow-amber-950/40">
-            {initials}
+            {initials ?? "—"}
           </div>
 
           <div className="mt-5">
-            <h2 className="text-xl font-bold text-white">{name}</h2>
-            <p className="mt-1 text-xs text-amber-300">{targetRole} Aspirant</p>
+            <h2 className="text-xl font-bold text-white">
+              {name ?? "Name not provided"}
+            </h2>
+            <p className="mt-1 text-xs text-amber-300">
+              {targetRole ? `${targetRole} Aspirant` : "Career target not set"}
+            </p>
           </div>
 
           <div className="mt-6 rounded-2xl border border-emerald-500/30 bg-emerald-950/20 p-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
               Placement Readiness
             </p>
-            <p className="mt-1 text-2xl font-serif font-bold text-emerald-300">{readiness}%</p>
+            <p className="mt-1 text-2xl font-serif font-bold text-emerald-300">
+              {readiness != null ? `${readiness}%` : "—"}
+            </p>
           </div>
 
           <div className="mt-4 flex flex-col gap-2">

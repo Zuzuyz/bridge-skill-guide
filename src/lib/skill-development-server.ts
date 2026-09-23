@@ -52,11 +52,8 @@ export const ROLE_BENCHMARKS: Record<string, { skill: string; benchmark: number;
     { skill: "React", benchmark: 70, importance: "CORE" },
     { skill: "System Design", benchmark: 70, importance: "CORE" },
     { skill: "Aptitude & Problem Solving", benchmark: 80, importance: "CRITICAL" },
-  ]
+  ],
 };
-
-// Default fallback benchmarks
-const DEFAULT_BENCHMARKS = ROLE_BENCHMARKS["Full-Stack Engineer"];
 
 export const getSkillDevelopmentData = createServerFn({
   method: "GET",
@@ -82,6 +79,9 @@ export const getSkillDevelopmentData = createServerFn({
     enrollments: {
       include: { program: true },
     },
+    studentCareers: {
+      include: { career: true },
+    },
   });
 
   if (!student) {
@@ -99,8 +99,15 @@ export const getSkillDevelopmentData = createServerFn({
   });
 
   // 2. Benchmarks comparison for target role
-  const targetRole = student.targetRole || "Full-Stack Engineer";
-  const benchmarkRules = ROLE_BENCHMARKS[targetRole] || DEFAULT_BENCHMARKS || [];
+  // Real career direction: Phase 5 primary StudentCareer first, then the
+  // profile's own targetRole field, else null — no invented career.
+  const primaryCareerEntry = student.studentCareers.find((sc) => sc.isPrimary);
+  const targetRole = primaryCareerEntry?.career.title ?? student.targetRole ?? null;
+
+  // Benchmarks are defined per role. If the student's real role has no
+  // benchmark set, the comparison is honestly empty — never another
+  // role's benchmark set.
+  const benchmarkRules = targetRole ? (ROLE_BENCHMARKS[targetRole] ?? []) : [];
 
   const benchmarkComparison = benchmarkRules.map((b) => {
     const studentSkill = studentSkillsMap.get(b.skill.toLowerCase());
@@ -191,7 +198,7 @@ export const getSkillDevelopmentData = createServerFn({
       title: "SkillBridge Verified Scholar",
       type: "BADGE",
       issuer: "SkillBridge University Guild",
-      score: student.readiness || 65,
+      score: student.readiness,
       verificationCode: `SB-SCHOLAR-${student.id.slice(0, 6).toUpperCase()}`,
       issuedAt: new Date().toISOString(),
     });

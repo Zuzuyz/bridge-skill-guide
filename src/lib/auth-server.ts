@@ -99,6 +99,26 @@ export const login = createServerFn({ method: "POST" })
     };
   });
 
+/**
+ * Client-safe session reader for the AppShell.
+ * Returns the authenticated user from the HTTP-only session cookie
+ * (via getCurrentSessionUser/verifySession), or null when there is
+ * no valid session. localStorage is never an authentication source.
+ */
+export const getCurrentUser = createServerFn({ method: "GET" }).handler(
+  async () => {
+    const { getCurrentSessionUser } = await import(
+      "@/server/auth-context"
+    );
+
+    const sessionUser = await getCurrentSessionUser();
+
+    return sessionUser
+      ? { id: sessionUser.id, name: sessionUser.name, role: sessionUser.role }
+      : null;
+  },
+);
+
 export const logout = createServerFn({ method: "POST" }).handler(async () => {
   try {
     const { deleteCookie } = await import(

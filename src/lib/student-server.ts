@@ -165,8 +165,8 @@ export const getStudentDashboard = createServerFn({
     id: student.id,
     name: student.user.name,
     email: student.user.email,
-    college: student.college || "IIT Delhi",
-    targetRole: primaryCareerData?.title || student.targetRole || "AI Engineer",
+    college: student.college,
+    targetRole: primaryCareerData?.title || student.targetRole || null,
     careerDirection: {
       primary: primaryCareerData,
       secondaries: secondaryCareersData,
@@ -276,8 +276,8 @@ export const getSkillPassportData = createServerFn({
   return {
     studentName: student.user.name,
     email: student.user.email,
-    college: student.college || "IIT Delhi",
-    targetRole: student.targetRole || "AI Engineer",
+    college: student.college,
+    targetRole: student.targetRole || null,
     readiness,
     readinessBreakdown: breakdown,
     isShareable: student.passportShareable ?? false,

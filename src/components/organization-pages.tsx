@@ -11,13 +11,17 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis } from "recharts";
 import { AppShell } from "@/components/app-shell";
 import { StatCard } from "@/components/metrics";
 import { Button } from "@/components/ui/button";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Input } from "@/components/ui/input";
+import {
+  getPlatformAdminStats,
+  type PlatformAdminStats,
+} from "@/lib/admin-server";
 import { candidates, collegeChartData, internships } from "@/data/mock-data";
 
 export function CompanyDashboard() {
@@ -281,7 +285,7 @@ export function CollegeDashboard() {
     <AppShell
       role="college"
       title="Placement readiness intelligence"
-      eyebrow="IIT Delhi • 2027 cohort"
+      eyebrow="College administration"
     >
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
@@ -403,46 +407,115 @@ export function CollegeStudentsPage() {
 }
 
 export function AdminDashboard() {
+  const [stats, setStats] = useState<PlatformAdminStats | null>(null);
+  const [state, setState] = useState<"loading" | "ready" | "unauthorized" | "error">(
+    "loading",
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    getPlatformAdminStats()
+      .then((result) => {
+        if (cancelled) return;
+        setStats(result);
+        setState(result === null ? "unauthorized" : "ready");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setState("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (state === "loading") {
+    return (
+      <AppShell role="admin" title="Platform operations" eyebrow="SkillBridge administration">
+        <p className="text-muted-foreground">Loading platform statistics…</p>
+      </AppShell>
+    );
+  }
+
+  if (state === "unauthorized") {
+    return (
+      <AppShell role="admin" title="Platform operations" eyebrow="SkillBridge administration">
+        <p className="text-muted-foreground">
+          You are not authorized to view platform administration.
+        </p>
+      </AppShell>
+    );
+  }
+
+  if (state === "error" || !stats) {
+    return (
+      <AppShell role="admin" title="Platform operations" eyebrow="SkillBridge administration">
+        <p className="text-muted-foreground">
+          Platform statistics are temporarily unavailable. Please try again.
+        </p>
+      </AppShell>
+    );
+  }
+
+  const cards: Array<{ label: string; value: number; detail: string; icon: React.ReactNode }> = [
+    {
+      label: "Registered students",
+      value: stats.students,
+      detail: "Real student profiles",
+      icon: <Users className="size-4" />,
+    },
+    {
+      label: "Registered colleges",
+      value: stats.colleges,
+      detail: "Real college records",
+      icon: <Building2 className="size-4" />,
+    },
+    {
+      label: "Registered companies",
+      value: stats.companies,
+      detail: "Real company accounts",
+      icon: <ShieldCheck className="size-4" />,
+    },
+    {
+      label: "Internship opportunities",
+      value: stats.internships,
+      detail: `${stats.activeInternships} currently active`,
+      icon: <TrendingUp className="size-4" />,
+    },
+  ];
+
+  const health: Array<[string, number, string]> = [
+    ["Applications received", stats.applications, "From real student submissions"],
+    ["Project submissions", stats.projectSubmissions, "Persisted student work"],
+    ["Assessment attempts", stats.assessmentAttempts, "Completed skill assessments"],
+    ["Verified skills", stats.verifiedSkills, "Beyond resume-detected level"],
+    ["Recorded outcomes", stats.outcomes, "Authorized employer records"],
+    ["Employer feedback entries", stats.employerFeedback, "From authorized employers"],
+  ];
+
   return (
     <AppShell role="admin" title="Platform operations" eyebrow="SkillBridge administration">
       <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard
-          label="Active learners"
-          value="120K"
-          detail="12.4% monthly growth"
-          icon={<Users className="size-4" />}
-        />
-        <StatCard
-          label="Partner colleges"
-          value="450"
-          detail="38 added this quarter"
-          icon={<Building2 className="size-4" />}
-        />
-        <StatCard
-          label="Hiring partners"
-          value="1,200"
-          detail="96% verified"
-          icon={<ShieldCheck className="size-4" />}
-        />
-        <StatCard
-          label="Successful matches"
-          value="18.6K"
-          detail="92% quality score"
-          icon={<TrendingUp className="size-4" />}
-        />
+        {cards.map((card) => (
+          <StatCard
+            key={card.label}
+            label={card.label}
+            value={card.value.toLocaleString()}
+            detail={card.detail}
+            icon={card.icon}
+          />
+        ))}
       </div>
       <section className="mt-6 rounded-xl border bg-card p-6 soft-shadow">
         <h2 className="text-xl font-bold">Platform health</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-3">
-          {[
-            ["AI skill analyses", "48,290", "99.8% success"],
-            ["Open opportunities", "3,842", "All moderated"],
-            ["Applications this week", "12,408", "18% conversion"],
-          ].map(([label, value, detail]) => (
+          {health.map(([label, value, detail]) => (
             <div key={label} className="rounded-xl bg-muted p-5">
               <p className="text-xs font-bold uppercase text-muted-foreground">{label}</p>
-              <strong className="mt-2 block font-display text-3xl">{value}</strong>
-              <p className="mt-2 text-sm text-success">{detail}</p>
+              <strong className="mt-2 block font-display text-3xl">
+                {value.toLocaleString()}
+              </strong>
+              <p className="mt-2 text-sm text-muted-foreground">{detail}</p>
             </div>
           ))}
         </div>

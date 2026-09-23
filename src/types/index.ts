@@ -158,8 +158,8 @@ export interface ReadinessBreakdown {
 export interface SkillPassportData {
   studentName: string;
   email: string;
-  college: string;
-  targetRole: string;
+  college: string | null;
+  targetRole: string | null;
   readiness: number;
   readinessBreakdown: ReadinessBreakdown;
   isShareable: boolean;

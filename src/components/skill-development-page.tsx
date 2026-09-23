@@ -249,14 +249,14 @@ export function SkillDevelopmentPage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-white/[0.04] border border-white/10 rounded-2xl p-4 backdrop-blur-md">
               <div className="space-y-1">
                 <div className="text-xs text-slate-400 uppercase tracking-wider font-mono">Target Role</div>
-                <div className="text-sm font-bold text-white">{student?.targetRole || "Full-Stack Engineer"}</div>
-                <div className="text-xs text-slate-400">College: {student?.college || "SkillBridge University"}</div>
+                <div className="text-sm font-bold text-white">{student?.targetRole ?? "Career target not set"}</div>
+                <div className="text-xs text-slate-400">College: {student?.college ?? "College not provided"}</div>
               </div>
               <div className="h-10 w-px bg-white/10 hidden sm:block" />
               <div className="text-center">
                 <div className="text-xs text-slate-400 uppercase tracking-wider font-mono">Placement Readiness</div>
                 <div className="text-2xl font-bold bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-200 bg-clip-text text-transparent">
-                  {student?.readiness || 70}%
+                  {student?.readiness != null ? `${student.readiness}%` : "—"}
                 </div>
               </div>
             </div>
@@ -829,7 +829,7 @@ export function SkillDevelopmentPage() {
                     Target Role Standard Analysis
                   </div>
                   <h2 className="text-2xl font-serif font-bold text-white">
-                    Industry Benchmark Gap Matrix: {student?.targetRole || "Full-Stack Engineer"}
+                    Industry Benchmark Gap Matrix: {student?.targetRole ?? "Career target not set"}
                   </h2>
                 </div>
 
@@ -1089,7 +1089,7 @@ export function SkillDevelopmentPage() {
                     </div>
 
                     <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-400 font-mono">
-                      <span>Score: {cred.score}%</span>
+                      <span>Score: {cred.score != null ? `${cred.score}%` : "Not recorded"}</span>
                       <span>{new Date(cred.issuedAt).toLocaleDateString()}</span>
                     </div>
                   </div>

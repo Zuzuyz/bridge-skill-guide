@@ -363,7 +363,10 @@ export const analyzeResume = createServerFn({
     });
     if (allSkills.length > 0) {
       const avgScore = Math.round(allSkills.reduce((acc, curr) => acc + curr.score, 0) / allSkills.length);
-      const newReadiness = Math.min(98, Math.max(student.readiness || 50, avgScore));
+      // readiness is NOT NULL with a real stored value (0 = not yet computed).
+      // New readiness is the max of the stored value and the real average
+      // skill score — never an invented baseline.
+      const newReadiness = Math.min(98, Math.max(student.readiness, avgScore));
 
       await prisma.studentProfile.update({
         where: { id: student.id },

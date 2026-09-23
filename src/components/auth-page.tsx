@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { login, register } from "@/lib/auth-server";
-import { storage } from "@/lib/storage";
+
 import type { UserRole } from "@/types";
 
 const roles = [
@@ -130,10 +130,8 @@ export function AuthPage({
             },
           });
 
-      storage.setUser({
-        ...user,
-        name: name || user.name,
-      });
+      // Identity is established by the HTTP-only session cookie set
+      // server-side in login/register. No localStorage auth state.
 
       const destination =
         isRegister &&
