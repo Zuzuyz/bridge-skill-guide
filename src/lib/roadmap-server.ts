@@ -1,70 +1,446 @@
+
 import { createServerFn } from "@tanstack/react-start";
-import { prisma } from "@/server/db";
+import { z } from "zod";
+
+import { prisma } from "@/server/db.server";
 import { getAuthenticatedStudentProfile } from "@/server/auth-context";
-import { generateCareerRoadmap } from "@/server/gemini";
+import { computeCareerSkillGap } from "@/lib/skill-gap-core.server";
+import {
+  loadStudentRoadmap,
+  mapRoadmapItems,
+  resolvePrimaryCareer,
+} from "@/lib/roadmap-core.server";
 
 /* =========================================================
-   LOCAL FALLBACK ROADMAP
-   Used when Gemini quota is exceeded or the API is unavailable.
+   TYPES
 ========================================================= */
 
-const fallbackRoadmaps: Record<string, Array<{
+export interface RoadmapItemData {
+  id: string;
   step: number;
   skill: string;
-  status: "complete" | "current" | "upcoming";
-  difficulty: string;
-  duration: string;
-  resource: string;
-  project: string;
-}>> = {
-  "AI Engineer": [
-    { step: 1, skill: "Python & NumPy", status: "current", difficulty: "Beginner", duration: "3 weeks", resource: "Work through Python for Data Science Handbook chapters 1–3.", project: "Build a data cleaning pipeline for a CSV dataset." },
-    { step: 2, skill: "Machine Learning Fundamentals", status: "upcoming", difficulty: "Intermediate", duration: "4 weeks", resource: "Study Andrew Ng's Machine Learning Specialization.", project: "Train a classification model on a public dataset and evaluate accuracy." },
-    { step: 3, skill: "TensorFlow / PyTorch", status: "upcoming", difficulty: "Intermediate", duration: "3 weeks", resource: "Complete TensorFlow Developer Certificate course.", project: "Build and deploy an image classification neural network." },
-    { step: 4, skill: "SQL & Data Pipelines", status: "upcoming", difficulty: "Beginner", duration: "2 weeks", resource: "Practice with Mode Analytics SQL tutorials.", project: "Write analytics queries on a PostgreSQL dataset." },
-    { step: 5, skill: "AWS / Cloud Deployment", status: "upcoming", difficulty: "Intermediate", duration: "3 weeks", resource: "AWS Cloud Practitioner Essentials course.", project: "Deploy a trained ML model as a REST API on AWS Lambda." },
-    { step: 6, skill: "MLOps & Monitoring", status: "upcoming", difficulty: "Advanced", duration: "4 weeks", resource: "Study MLflow, DVC and Weights & Biases documentation.", project: "Build a full MLOps pipeline: data versioning, model registry, CI/CD." },
-    { step: 7, skill: "Internship Preparation", status: "upcoming", difficulty: "Intermediate", duration: "2 weeks", resource: "Practice LeetCode ML/Python problems and system design for AI roles.", project: "Create a portfolio GitHub repo showcasing your three best projects." },
-  ],
-  "Data Scientist": [
-    { step: 1, skill: "Python & Pandas", status: "current", difficulty: "Beginner", duration: "3 weeks", resource: "Work through Python for Data Science Handbook.", project: "Analyze a public dataset end-to-end with Pandas and Matplotlib." },
-    { step: 2, skill: "Statistics & Probability", status: "upcoming", difficulty: "Intermediate", duration: "3 weeks", resource: "Statistics and Probability on Khan Academy.", project: "Run hypothesis tests on a real dataset and document findings." },
-    { step: 3, skill: "Machine Learning", status: "upcoming", difficulty: "Intermediate", duration: "4 weeks", resource: "Scikit-learn documentation and tutorials.", project: "Build and tune a regression model and publish results." },
-    { step: 4, skill: "Data Visualization", status: "upcoming", difficulty: "Beginner", duration: "2 weeks", resource: "Plotly and Seaborn tutorials.", project: "Create an interactive dashboard for a public dataset." },
-    { step: 5, skill: "SQL & Databases", status: "upcoming", difficulty: "Beginner", duration: "2 weeks", resource: "Mode Analytics SQL tutorials.", project: "Write complex SQL queries to answer business questions." },
-    { step: 6, skill: "Cloud & Big Data", status: "upcoming", difficulty: "Intermediate", duration: "3 weeks", resource: "Google BigQuery and AWS Athena tutorials.", project: "Run analytics on a large dataset using BigQuery." },
-    { step: 7, skill: "Internship Preparation", status: "upcoming", difficulty: "Intermediate", duration: "2 weeks", resource: "Practice case studies and data science interview problems.", project: "Publish a Kaggle notebook showcasing your end-to-end analysis." },
-  ],
-  "Frontend Engineer": [
-    { step: 1, skill: "JavaScript ES6+", status: "current", difficulty: "Beginner", duration: "3 weeks", resource: "JavaScript.info — modern JavaScript tutorial.", project: "Build a vanilla JavaScript app — a todo list with local storage." },
-    { step: 2, skill: "TypeScript", status: "upcoming", difficulty: "Intermediate", duration: "2 weeks", resource: "TypeScript Handbook official documentation.", project: "Port your JS app to TypeScript with strict types." },
-    { step: 3, skill: "React", status: "upcoming", difficulty: "Intermediate", duration: "4 weeks", resource: "React official docs and beta tutorial.", project: "Build a React app consuming a public REST API." },
-    { step: 4, skill: "CSS & Tailwind", status: "upcoming", difficulty: "Beginner", duration: "2 weeks", resource: "Tailwind CSS documentation.", project: "Style your React app with Tailwind — responsive and accessible." },
-    { step: 5, skill: "Testing", status: "upcoming", difficulty: "Intermediate", duration: "2 weeks", resource: "Vitest and React Testing Library docs.", project: "Write unit and integration tests for your React components." },
-    { step: 6, skill: "Accessibility & Performance", status: "upcoming", difficulty: "Intermediate", duration: "2 weeks", resource: "web.dev Accessibility and Performance guides.", project: "Audit your app with Lighthouse and fix all critical issues." },
-    { step: 7, skill: "Internship Preparation", status: "upcoming", difficulty: "Intermediate", duration: "2 weeks", resource: "Practice frontend interview questions from Greatfrontend.", project: "Polish your GitHub profile and deploy your best project to Vercel." },
-  ],
+  status: "COMPLETE" | "CURRENT" | "UPCOMING";
+  difficulty: string | null;
+  duration: string | null;
+  resource: string | null;
+  project: string | null;
+  currentScore: number | null;
+  targetScore: number | null;
+  priority: number | null;
+  reason: string | null;
+  activityType: string | null;
+}
+
+export interface RoadmapData {
+  careerTitle: string;
+  careerCategory: string;
+  readiness: number;
+  readinessLabel: string;
+  roadmap: RoadmapItemData[];
+  generatedAt: string;
+}
+
+export interface RoadmapGenerationResult {
+  success: boolean;
+  roadmap: RoadmapData;
+  message: string;
+}
+
+/* =========================================================
+   CONSTANTS
+========================================================= */
+
+const TARGET_SCORE = 80;
+const MAX_ROADMAP_ITEMS = 8;
+
+const ACTIVITY_TYPES = {
+  LEARNING: "LEARNING",
+  ASSESSMENT: "ASSESSMENT",
+  PROJECT: "PROJECT",
+  EVIDENCE: "EVIDENCE",
+} as const;
+
+/* =========================================================
+   TYPES FOR PHASE 7 PRIORITY GAPS
+========================================================= */
+
+type PriorityGap = {
+  skillName: string;
+  studentScore: number;
+  gapPriority: number;
+  importance: number;
+  importanceLabel: string;
+  demandLevel: string | null;
+  demandLevelLabel: string;
+  verificationLevel: string | null;
+  verificationLabel: string | null;
+  status: string;
+  explanation: string;
 };
 
-function getFallbackRoadmap(targetRole: string) {
-  return (
-    fallbackRoadmaps[targetRole] ??
-    fallbackRoadmaps["AI Engineer"] ??
-    []
-  );
+/* =========================================================
+   HELPERS
+========================================================= */
+
+/**
+ * Pick the roadmap difficulty from the student's actual
+ * proficiency and the career importance of the skill.
+ *
+ * This is intentionally deterministic.
+ */
+function determineDifficulty(
+  studentScore: number,
+  importance: number,
+): string {
+  if (studentScore === 0) {
+    return importance >= 4 ? "Intermediate" : "Beginner";
+  }
+
+  if (studentScore < 50) {
+    return "Intermediate";
+  }
+
+  return "Beginner";
 }
+
+/**
+ * Pick a realistic learning duration from the actual gap.
+ *
+ * This is a roadmap estimate, not a claim about a provider's
+ * course duration.
+ */
+function determineDuration(
+  studentScore: number,
+  importance: number,
+): string {
+  if (studentScore === 0) {
+    return importance >= 4 ? "4 weeks" : "3 weeks";
+  }
+
+  if (studentScore < 50) {
+    return "3 weeks";
+  }
+
+  return "2 weeks";
+}
+
+/**
+ * Determine what type of action makes sense for the student.
+ *
+ * No fake project is created here.
+ */
+function determineActivityType(
+  studentScore: number,
+  verificationLevel: string | null,
+): string {
+  if (studentScore === 0) {
+    return ACTIVITY_TYPES.LEARNING;
+  }
+
+  if (
+    verificationLevel === "RESUME_DETECTED" ||
+    !verificationLevel
+  ) {
+    return ACTIVITY_TYPES.ASSESSMENT;
+  }
+
+  if (studentScore < 70) {
+    return ACTIVITY_TYPES.PROJECT;
+  }
+
+  return ACTIVITY_TYPES.ASSESSMENT;
+}
+
+/**
+ * Generate an explanation directly from Phase 7 data.
+ */
+function generateReason(
+  skillName: string,
+  currentScore: number,
+  importanceLabel: string,
+  demandLevelLabel: string,
+  verificationLabel: string | null,
+): string {
+  const scoreDesc =
+    currentScore === 0
+      ? `You have no verified evidence for ${skillName}`
+      : currentScore < 50
+        ? `Your ${skillName} proficiency is at ${currentScore}%`
+        : `Your ${skillName} is at ${currentScore}%`;
+
+  const verificationDesc = verificationLabel
+    ? ` (current verification: ${verificationLabel})`
+    : "";
+
+  return `${scoreDesc}${verificationDesc}. ${skillName} is a ${importanceLabel} skill for this career with ${demandLevelLabel} in the industry. Reaching ${TARGET_SCORE}% will improve your career readiness.`;
+}
+
+/* =========================================================
+   REAL LEARNING RESOURCE RESOLUTION
+========================================================= */
+
+/**
+ * Find a real LearningResource from PostgreSQL.
+ *
+ * Important:
+ * - Never invent a URL.
+ * - Never invent a provider.
+ * - Never manufacture a course title.
+ * - If no resource exists, return null.
+ *
+ * Matching priority:
+ *   1. Exact skill + suitable difficulty
+ *   2. Case-insensitive skill match
+ *   3. Deterministic oldest/newest ordering
+ */
+async function resolveLearningResource(
+  skillName: string,
+  difficulty: string,
+): Promise<string | null> {
+  const exact = await prisma.learningResource.findFirst({
+    where: {
+      skill: skillName,
+      difficulty,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    select: {
+      title: true,
+      provider: true,
+      url: true,
+    },
+  });
+
+  if (exact) {
+    return formatResource(exact);
+  }
+
+  /**
+   * PostgreSQL case-insensitive matching.
+   *
+   * We use contains rather than inventing normalized skill
+   * aliases. This allows "Python" / "python" style differences
+   * without introducing fake mappings.
+   */
+  const caseInsensitive = await prisma.learningResource.findFirst({
+    where: {
+      skill: {
+        equals: skillName,
+        mode: "insensitive",
+      },
+    },
+    orderBy: [
+      {
+        createdAt: "desc",
+      },
+      {
+        id: "asc",
+      },
+    ],
+    select: {
+      title: true,
+      provider: true,
+      url: true,
+    },
+  });
+
+  if (caseInsensitive) {
+    return formatResource(caseInsensitive);
+  }
+
+  return null;
+}
+
+/**
+ * Convert a real database resource into display text.
+ */
+function formatResource(resource: {
+  title: string;
+  provider: string;
+  url: string;
+}): string {
+  return `${resource.title} — ${resource.provider} — ${resource.url}`;
+}
+
+/* =========================================================
+   PROJECT / EVIDENCE RESOLUTION
+========================================================= */
+
+/**
+ * ProjectSubmission represents projects the student has already
+ * submitted as evidence.
+ *
+ * It is NOT a project recommendation catalog.
+ *
+ * Therefore we only reference an existing verified/submitted
+ * project when it genuinely matches the roadmap skill.
+ */
+async function resolveExistingProject(
+  studentId: string,
+  skillName: string,
+): Promise<string | null> {
+  const project = await prisma.projectSubmission.findFirst({
+    where: {
+      studentId,
+      skillName: {
+        equals: skillName,
+        mode: "insensitive",
+      },
+    },
+    /**
+     * Prefer a verified project first, then fall back to the
+     * most recently submitted project.
+     *
+     * Postgres sorts NULLs FIRST on DESC by default, so without
+     * `nulls: "last"` unverified submissions would outrank
+     * verified ones. `nulls: "last"` fixes that.
+     */
+    orderBy: [
+      {
+        verifiedAt: { sort: "desc", nulls: "last" },
+      },
+      {
+        submittedAt: "desc",
+      },
+    ],
+    select: {
+      title: true,
+      projectUrl: true,
+      repoUrl: true,
+    },
+  });
+
+  if (!project) {
+    return null;
+  }
+
+  const links = [
+    project.projectUrl,
+    project.repoUrl,
+  ].filter(Boolean);
+
+  return links.length > 0
+    ? `${project.title} — ${links.join(" | ")}`
+    : project.title;
+}
+
+/* =========================================================
+   DETERMINISTIC ROADMAP GENERATION
+========================================================= */
+
+async function generateRoadmapSteps(
+  studentId: string,
+  priorityGaps: PriorityGap[],
+): Promise<
+  Array<{
+    step: number;
+    skill: string;
+    difficulty: string;
+    duration: string;
+    resource: string | null;
+    project: string | null;
+    currentScore: number;
+    targetScore: number;
+    priority: number;
+    reason: string;
+    activityType: string;
+  }>
+> {
+  const steps: Array<{
+    step: number;
+    skill: string;
+    difficulty: string;
+    duration: string;
+    resource: string | null;
+    project: string | null;
+    currentScore: number;
+    targetScore: number;
+    priority: number;
+    reason: string;
+    activityType: string;
+  }> = [];
+
+  let stepNumber = 1;
+
+  for (const gap of priorityGaps.slice(0, MAX_ROADMAP_ITEMS)) {
+    const difficulty = determineDifficulty(
+      gap.studentScore,
+      gap.importance,
+    );
+
+    const duration = determineDuration(
+      gap.studentScore,
+      gap.importance,
+    );
+
+    const activityType = determineActivityType(
+      gap.studentScore,
+      gap.verificationLevel,
+    );
+
+    const reason = generateReason(
+      gap.skillName,
+      gap.studentScore,
+      gap.importanceLabel,
+      gap.demandLevelLabel,
+      gap.verificationLabel,
+    );
+
+    /**
+     * Only use a resource that actually exists in PostgreSQL.
+     */
+    const resource = await resolveLearningResource(
+      gap.skillName,
+      difficulty,
+    );
+
+    /**
+     * Only reference a project the student has actually
+     * submitted. Never fabricate a project recommendation.
+     */
+    const project =
+      activityType === ACTIVITY_TYPES.PROJECT
+        ? await resolveExistingProject(
+            studentId,
+            gap.skillName,
+          )
+        : null;
+
+    steps.push({
+      step: stepNumber,
+      skill: gap.skillName,
+      difficulty,
+      duration,
+      resource,
+      project,
+      currentScore: gap.studentScore,
+      targetScore: TARGET_SCORE,
+      priority: gap.gapPriority,
+      reason,
+      activityType,
+    });
+
+    stepNumber++;
+  }
+
+  return steps;
+}
+
+/* =========================================================
+   SERVER FUNCTION: GENERATE ROADMAP
+========================================================= */
 
 export const generateStudentRoadmap = createServerFn({
   method: "POST",
-}).handler(async () => {
+}).handler(async (): Promise<RoadmapGenerationResult> => {
+  /* -------------------------------------------------------
+     1. AUTHENTICATED STUDENT
+  ------------------------------------------------------- */
+
   const student = await getAuthenticatedStudentProfile({
     user: true,
     skills: {
-      include: {
-        skill: true,
-      },
-    },
-    skillGaps: {
       include: {
         skill: true,
       },
@@ -77,109 +453,242 @@ export const generateStudentRoadmap = createServerFn({
     );
   }
 
-  const targetRole = student.targetRole ?? "AI Engineer";
-
-  const gaps = student.skillGaps.map((gap) => ({
-    skill: gap.skill.name,
-    score: gap.score,
-    status: gap.status,
-  }));
-
   /* -------------------------------------------------------
-     Generate roadmap via Gemini.
-     If Gemini is unavailable (quota exceeded, network error, etc.)
-     fall back to the local hardcoded roadmap so the page
-     always renders something useful.
+     2. PRIMARY CAREER
   ------------------------------------------------------- */
 
-  let roadmapItems: Array<{
-    step: number;
-    skill: string;
-    status: string;
-    difficulty?: string | null;
-    duration?: string | null;
-    resource?: string | null;
-    project?: string | null;
-  }>;
+  const primaryCareer = await resolvePrimaryCareer(
+    student.id,
+  );
 
-  try {
-    const roadmap = await generateCareerRoadmap({
-      targetRole,
-      gaps,
-    });
-
-    roadmapItems = roadmap.items;
-
-    console.log("[SkillBridge] Gemini roadmap generated successfully.");
-  } catch (error) {
-    console.warn(
-      "[SkillBridge] Gemini unavailable. Using local fallback roadmap.",
-      error instanceof Error ? error.message : error,
+  if (!primaryCareer) {
+    throw new Error(
+      "NO_PRIMARY_CAREER: Please select a primary career direction before generating a roadmap.",
     );
-
-    roadmapItems = getFallbackRoadmap(targetRole);
   }
 
-  /*
-   * Remove previous roadmap generated for this student.
-   */
-  await prisma.roadmapItem.deleteMany({
-    where: {
-      studentId: student.id,
-    },
-  });
+  const careerId = primaryCareer.careerId;
+  const careerTitle = primaryCareer.career.title;
+  const careerCategory = primaryCareer.career.category;
 
-  /*
-   * Save roadmap into PostgreSQL.
-   */
-  for (const item of roadmapItems) {
-    await prisma.roadmapItem.create({
-      data: {
+  /* -------------------------------------------------------
+     3. PHASE 7 SKILL GAP ENGINE
+  ------------------------------------------------------- */
+
+  const skillGapResult = await computeCareerSkillGap(
+    student.id,
+    careerId,
+  );
+
+  const priorityGaps = skillGapResult.priorityGaps;
+
+  /* -------------------------------------------------------
+     4. NO PRIORITY GAPS
+  ------------------------------------------------------- */
+
+  if (priorityGaps.length === 0) {
+    await prisma.roadmapItem.deleteMany({
+      where: {
         studentId: student.id,
-        step: item.step,
-        skill: item.skill,
-        status: convertStatus(item.status),
-        difficulty: item.difficulty ?? null,
-        duration: item.duration ?? null,
-        resource: item.resource ?? null,
-        project: item.project ?? null,
       },
     });
+
+    return {
+      success: true,
+      roadmap: {
+        careerTitle,
+        careerCategory,
+        readiness: skillGapResult.readiness,
+        readinessLabel: skillGapResult.readinessLabel,
+        roadmap: [],
+        generatedAt: new Date().toISOString(),
+      },
+      message:
+        "Your current profile covers the priority gaps for this career. No roadmap items needed.",
+    };
   }
 
-  const savedRoadmap = await prisma.roadmapItem.findMany({
-    where: {
-      studentId: student.id,
+  /* -------------------------------------------------------
+     5. BUILD PERSONALIZED ROADMAP
+  ------------------------------------------------------- */
+
+  const roadmapSteps = await generateRoadmapSteps(
+    student.id,
+    priorityGaps,
+  );
+
+  /* -------------------------------------------------------
+     6. PERSIST ATOMICALLY
+  ------------------------------------------------------- */
+
+  const savedItems = await prisma.$transaction(
+    async (tx) => {
+      await tx.roadmapItem.deleteMany({
+        where: {
+          studentId: student.id,
+        },
+      });
+
+      for (const item of roadmapSteps) {
+        await tx.roadmapItem.create({
+          data: {
+            studentId: student.id,
+            step: item.step,
+            skill: item.skill,
+            status:
+              item.step === 1
+                ? "CURRENT"
+                : "UPCOMING",
+            difficulty: item.difficulty,
+            duration: item.duration,
+            resource: item.resource,
+            project: item.project,
+            currentScore: item.currentScore,
+            targetScore: item.targetScore,
+            priority: item.priority,
+            reason: item.reason,
+            activityType: item.activityType,
+          },
+        });
+      }
+
+      return tx.roadmapItem.findMany({
+        where: {
+          studentId: student.id,
+        },
+        orderBy: {
+          step: "asc",
+        },
+      });
     },
-    orderBy: {
-      step: "asc",
-    },
-  });
+  );
+
+  /* -------------------------------------------------------
+     7. RESPONSE
+  ------------------------------------------------------- */
+
+  const roadmapData: RoadmapData = {
+    careerTitle,
+    careerCategory,
+    readiness: skillGapResult.readiness,
+    readinessLabel: skillGapResult.readinessLabel,
+    roadmap: mapRoadmapItems(savedItems),
+    generatedAt: new Date().toISOString(),
+  };
+
+  const resourcesAvailable = savedItems.filter(
+    (item) => item.resource !== null,
+  ).length;
+
+  const projectsAvailable = savedItems.filter(
+    (item) => item.project !== null,
+  ).length;
+
+  let message =
+    `Roadmap generated for ${careerTitle} with ${roadmapSteps.length} personalized milestones.`;
+
+  if (resourcesAvailable === 0) {
+    message +=
+      " No matching verified learning resources are currently available in the SkillBridge catalog.";
+  } else {
+    message +=
+      ` ${resourcesAvailable} milestone${resourcesAvailable === 1 ? "" : "s"} include${resourcesAvailable === 1 ? "s" : ""} a verified catalog resource.`;
+  }
+
+  if (projectsAvailable > 0) {
+    message +=
+      ` ${projectsAvailable} milestone${projectsAvailable === 1 ? "" : "s"} reference existing student project evidence.`;
+  }
 
   return {
-    targetRole,
-    roadmap: savedRoadmap.map((item) => ({
-      id: item.id,
-      step: item.step,
-      skill: item.skill,
-      status: item.status,
-      difficulty: item.difficulty,
-      duration: item.duration,
-      resource: item.resource,
-      project: item.project,
-    })),
+    success: true,
+    roadmap: roadmapData,
+    message,
   };
 });
 
+/* =========================================================
+   SERVER FUNCTION: GET ROADMAP
+========================================================= */
 
-function convertStatus(status: string) {
-  if (status === "complete" || status === "COMPLETE") {
-    return "COMPLETE" as const;
+export const getStudentRoadmap = createServerFn({
+  method: "GET",
+}).handler(async (): Promise<RoadmapData | null> => {
+  const student = await getAuthenticatedStudentProfile({
+    user: true,
+  });
+
+  if (!student) {
+    throw new Error(
+      "No student profile found. Please register a student account first.",
+    );
   }
 
-  if (status === "current" || status === "CURRENT") {
-    return "CURRENT" as const;
-  }
+  return loadStudentRoadmap(student.id);
+});
 
-  return "UPCOMING" as const;
-}
+/* =========================================================
+   SERVER FUNCTION: UPDATE ROADMAP STATUS
+========================================================= */
+
+export const updateRoadmapItemStatus = createServerFn({
+  method: "POST",
+})
+  .validator(
+    z.object({
+      itemId: z.string(),
+      status: z.enum([
+        "COMPLETE",
+        "CURRENT",
+        "UPCOMING",
+      ]),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const student =
+      await getAuthenticatedStudentProfile({
+        user: true,
+      });
+
+    if (!student) {
+      throw new Error(
+        "No student profile found. Please register a student account first.",
+      );
+    }
+
+    const item =
+      await prisma.roadmapItem.findUnique({
+        where: {
+          id: data.itemId,
+        },
+      });
+
+    if (
+      !item ||
+      item.studentId !== student.id
+    ) {
+      throw new Error(
+        "Roadmap item not found or access denied.",
+      );
+    }
+
+    const updatedItem =
+      await prisma.roadmapItem.update({
+        where: {
+          id: data.itemId,
+        },
+        data: {
+          status: data.status,
+        },
+      });
+
+    return {
+      success: true,
+      item: {
+        id: updatedItem.id,
+        step: updatedItem.step,
+        skill: updatedItem.skill,
+        status: updatedItem.status,
+      },
+    };
+  });

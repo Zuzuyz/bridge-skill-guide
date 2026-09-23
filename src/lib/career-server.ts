@@ -1,10 +1,14 @@
 import { createServerFn } from "@tanstack/react-start";
-import { prisma } from "@/server/db";
+import { prisma } from "@/server/db.server";
 import { getAuthenticatedStudentProfile } from "@/server/auth-context";
+import { selectCurrentIndustryDemandBySkillId } from "@/lib/industry-demand-selector.server";
 // @ts-expect-error seed-careers is a .mjs script without TS types
 import { seedCareers } from "../../prisma/seed-careers.mjs";
 import {
+  DEMAND_LEVEL_LABELS,
   VERIFICATION_LEVEL_LABELS,
+  type DemandLevel,
+  type DemandSourceType,
   type VerificationLevel,
 } from "@/types";
 
@@ -24,11 +28,12 @@ export interface CareerSkillItem {
     assessmentScore?: number | null | undefined;
   } | undefined;
   industryDemand?: {
-    demandLevel: "HIGH" | "GROWING" | "EMERGING" | "STABLE" | "LOW";
+    demandLevel: DemandLevel;
     demandLevelLabel: string;
     demandScore: number | null;
-    sourceType: "DEMO" | "EMPLOYER_POSTINGS" | "INDUSTRY_REPORT" | "GOVERNMENT_DATA" | "PARTNER_DATA" | "MANUAL";
-    sourceName: string;
+    sourceType: DemandSourceType;
+    sourceName: string | null;
+    sourceUrl: string | null;
   } | undefined;
 }
 
@@ -231,8 +236,8 @@ export const getCareerBySlug = createServerFn({
       return null;
     }
 
-    const demandBySkillId = new Map(
-      career.industryDemands.map((d) => [d.skillId, d])
+    const demandBySkillId = selectCurrentIndustryDemandBySkillId(
+      career.industryDemands,
     );
 
     const studentSkillsMap = new Map(
@@ -258,6 +263,7 @@ export const getCareerBySlug = createServerFn({
 
       const rawLevel = matchedStudentSkill?.verificationLevel as VerificationLevel | undefined;
       const demandRecord = demandBySkillId.get(rs.skillId);
+      const demandLevel = demandRecord?.demandLevel as DemandLevel | undefined;
 
       return {
         skillId: rs.skill.id,
@@ -275,13 +281,16 @@ export const getCareerBySlug = createServerFn({
               assessmentScore: matchedStudentSkill?.assessmentScore,
             }
           : undefined,
-        industryDemand: {
-          demandLevel: (demandRecord?.demandLevel as any) || "STABLE",
-          demandLevelLabel: demandRecord?.demandLevel === "HIGH" ? "High Demand" : demandRecord?.demandLevel === "GROWING" ? "Growing Demand" : "Stable Demand",
-          demandScore: demandRecord?.demandScore ?? 65,
-          sourceType: (demandRecord?.sourceType as any) || "DEMO",
-          sourceName: demandRecord?.sourceName || "SkillBridge Demo Industry Dataset",
-        },
+        industryDemand: demandRecord && demandLevel
+          ? {
+              demandLevel,
+              demandLevelLabel: DEMAND_LEVEL_LABELS[demandLevel],
+              demandScore: demandRecord.demandScore,
+              sourceType: demandRecord.sourceType as DemandSourceType,
+              sourceName: demandRecord.sourceName,
+              sourceUrl: demandRecord.sourceUrl,
+            }
+          : undefined,
       };
     });
 

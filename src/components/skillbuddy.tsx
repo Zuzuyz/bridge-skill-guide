@@ -19,7 +19,7 @@ import { askSkillBuddyServer } from "@/lib/skillbuddy-server";
 
 type ChatMessage = { id: string; role: "user" | "assistant"; content: string };
 const prompts = [
-  "Why is my readiness score 72%?",
+  "Why is my readiness score?",
   "What should I learn next?",
   "What internships match my skills?",
 ];
@@ -30,7 +30,7 @@ export function SkillBuddyChat({ embedded = false }: { embedded?: boolean }) {
       id: "welcome",
       role: "assistant",
       content:
-        "Hi Shubham — I’m SkillBuddy. I can explain your readiness, skill gaps, roadmap, and best-fit opportunities based on your actual verified skills and resume evidence.",
+        "Hi — I’m SkillBuddy. I can explain your readiness, skill gaps, roadmap, and best-fit opportunities based on your actual verified skills and resume evidence.",
     },
   ]);
   const [status, setStatus] = useState<"ready" | "submitted">("ready");

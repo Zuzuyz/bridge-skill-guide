@@ -17,7 +17,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { getInternshipById, getInternships } from "@/lib/internship-server";
-import { getInternshipMatch } from "@/lib/matching-server";
+import {
+  getInternshipMatch,
+  type ExplainableSkillMatch,
+} from "@/lib/matching-server";
+import { ExplainableMatchBreakdown } from "@/components/explainable-match";
 import { applyToInternship } from "@/lib/application-server";
 
 type Internship = {
@@ -44,13 +48,18 @@ type MatchedSkillDetail = {
 type InternshipMatch = {
   matchPercentage: number;
   skillMatch: number;
-  careerAlignment: number;
+  careerAlignment: number | null;
+  alignmentNote: string | null;
+  hasRequirementData: boolean;
   matchedSkills: string[];
   matchedSkillsDetails?: MatchedSkillDetail[];
   weakSkills: string[];
   weakSkillsDetails?: MatchedSkillDetail[];
   missingSkills: string[];
   totalRequiredSkills: number;
+  summary: string;
+  skills: ExplainableSkillMatch[];
+  isDemoData: boolean;
 };
 
 export function InternshipsPage() {
@@ -357,66 +366,49 @@ export function InternshipDetail({ id }: { id: string }) {
             <div className="mt-6 rounded-xl border bg-muted p-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold">Evidence-backed skill match</span>
-                <span className="text-2xl font-bold text-success">{match.matchPercentage}%</span>
+                {match.hasRequirementData && (
+                  <span className="text-2xl font-bold text-success">{match.matchPercentage}%</span>
+                )}
               </div>
 
-              <div className="mt-3 h-2 overflow-hidden rounded-full bg-background">
-                <div
-                  className="h-full rounded-full bg-success transition-all"
-                  style={{ width: `${match.matchPercentage}%` }}
-                />
-              </div>
+              {match.hasRequirementData && (
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-background">
+                  <div
+                    className="h-full rounded-full bg-success transition-all"
+                    style={{ width: `${match.matchPercentage}%` }}
+                  />
+                </div>
+              )}
 
-              {/* Match explanations with evidence */}
-              <div className="mt-4 space-y-4">
-                {match.matchedSkillsDetails && match.matchedSkillsDetails.length > 0 ? (
-                  <div>
-                    <p className="text-xs font-bold uppercase text-success">Why you match ({match.matchedSkillsDetails.length})</p>
-                    <div className="mt-2 space-y-2">
-                      {match.matchedSkillsDetails.map((s) => (
-                        <div key={s.name} className="flex flex-col rounded-lg border border-success/20 bg-success/10 p-2.5 text-xs">
-                          <div className="flex items-center justify-between">
-                            <span className="font-semibold text-success-foreground">✓ {s.name} ({s.score}%)</span>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-success/20 text-success font-medium">
-                              {s.verificationLabel}
-                            </span>
-                          </div>
-                          {s.evidence && (
-                            <p className="mt-1 text-[11px] text-muted-foreground italic line-clamp-2">
-                              "{s.evidence}"
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : match.matchedSkills.length > 0 && (
-                  <SkillGroup title="Strong match" skills={match.matchedSkills} variant="success" icon="✓" />
+              {/* Phase 10 — explainable breakdown from real data */}
+              <div className="mt-4 space-y-3">
+                <p className="text-xs leading-relaxed text-muted-foreground">
+                  {match.summary}
+                </p>
+
+                {match.hasRequirementData ? (
+                  <ExplainableMatchBreakdown
+                    skills={match.skills}
+                    theme="light"
+                  />
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    No matching requirement data available — this
+                    listing does not specify required skills.
+                  </p>
                 )}
 
-                {match.weakSkillsDetails && match.weakSkillsDetails.length > 0 ? (
-                  <div>
-                    <p className="text-xs font-bold uppercase text-yellow-600">Needs improvement ({match.weakSkillsDetails.length})</p>
-                    <div className="mt-2 space-y-2">
-                      {match.weakSkillsDetails.map((s) => (
-                        <div key={s.name} className="flex flex-col rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-2.5 text-xs">
-                          <div className="flex items-center justify-between">
-                            <span className="font-semibold text-yellow-800">⚠ {s.name} ({s.score}%)</span>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-yellow-500/20 text-yellow-800">
-                              {s.verificationLabel}
-                            </span>
-                          </div>
-                          <p className="mt-1 text-[10px] text-yellow-700">Needs assessment or practical project.</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : match.weakSkills.length > 0 && (
-                  <SkillGroup title="Needs improvement" skills={match.weakSkills} variant="warning" icon="⚠" />
+                {match.alignmentNote && match.careerAlignment !== null && (
+                  <p className="text-[11px] text-muted-foreground">
+                    {match.alignmentNote}
+                  </p>
                 )}
 
-                {match.missingSkills.length > 0 && (
-                  <SkillGroup title="Missing skills" skills={match.missingSkills} variant="danger" icon="✕" />
+                {match.isDemoData && (
+                  <p className="text-[11px] text-yellow-700">
+                    ⓘ Some demand labels come from the DEMO dataset,
+                    not live market evidence.
+                  </p>
                 )}
               </div>
             </div>
@@ -467,46 +459,6 @@ function InfoItem({ icon, value }: { icon: React.ReactNode; value: string }) {
     <div>
       <div className="mb-2 size-4 text-secondary">{icon}</div>
       <strong className="text-sm">{value}</strong>
-    </div>
-  );
-}
-
-function SkillGroup({
-  title,
-  skills,
-  variant,
-  icon,
-}: {
-  title: string;
-  skills: string[];
-  variant: "success" | "warning" | "danger";
-  icon: string;
-}) {
-  const styles = {
-    success: "bg-success/15 text-success-foreground",
-    warning: "bg-yellow-100 text-yellow-800",
-    danger: "bg-destructive/10 text-destructive",
-  };
-
-  const titleStyles = {
-    success: "text-success",
-    warning: "text-yellow-600",
-    danger: "text-destructive",
-  };
-
-  return (
-    <div className="mt-5">
-      <p className={`text-xs font-bold uppercase ${titleStyles[variant]}`}>{title}</p>
-      <div className="mt-2 flex flex-wrap gap-2">
-        {skills.map((skill) => (
-          <span
-            key={skill}
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${styles[variant]}`}
-          >
-            {icon} {skill}
-          </span>
-        ))}
-      </div>
     </div>
   );
 }

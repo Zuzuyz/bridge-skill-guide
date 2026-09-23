@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import {
   ArrowRight,
   Award,
+  BarChart3,
   Briefcase,
   Check,
   CheckCircle2,
@@ -44,7 +45,8 @@ import {
   togglePassportShareable,
 } from "@/lib/student-server";
 import { analyzeStudentSkillGap } from "@/lib/skill-gap-server";
-import { generateStudentRoadmap } from "@/lib/roadmap-server";
+import { generateStudentRoadmap, getStudentRoadmap, updateRoadmapItemStatus } from "@/lib/roadmap-server";
+import type { RoadmapItemData, RoadmapData } from "@/lib/roadmap-server";
 import { getMyApplications } from "@/lib/application-server";
 import { analyzeResume } from "@/lib/resume-server";
 
@@ -497,7 +499,7 @@ export function StudentDashboard() {
                 </span>
               </div>
               <p className="mt-1 text-xs text-slate-300">
-                Industry-demand index ratings for your target career direction ({data.careerDirection?.primary?.title || "AI Engineer"}).
+                Industry-demand index ratings for your target career direction ({data.careerDirection?.primary?.title ?? "your career"}).
               </p>
             </div>
 
@@ -760,7 +762,7 @@ export function ProfilePage() {
   const name = profile?.name ?? "Shubham Singh";
   const email = profile?.email ?? "student@skillbridge.demo";
   const college = profile?.college ?? "IIT Delhi";
-  const targetRole = profile?.targetRole ?? "AI Engineer";
+  const targetRole = profile?.targetRole ?? "your career";
   const readiness = profile?.readiness && profile.readiness > 0 ? profile.readiness : 84;
   const vStats = profile?.verificationStats ?? {
     resumeDetected: 32,
@@ -1714,10 +1716,14 @@ export function SkillGapPage() {
 ========================================================= */
 
 export function RoadmapPage() {
-  const [data, setData] = useState<any>(null);
+  const [roadmapData, setRoadmapData] = useState<RoadmapData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
+  const [noCareer, setNoCareer] = useState(false);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
+  // Load existing roadmap
   useEffect(() => {
     let mounted = true;
 
@@ -1725,15 +1731,35 @@ export function RoadmapPage() {
       try {
         setLoading(true);
         setError("");
+        setNoCareer(false);
 
-        const result = await generateStudentRoadmap();
+        const result = await getStudentRoadmap();
 
         if (mounted) {
-          setData(result);
+          if (result) {
+            setRoadmapData(result);
+          } else {
+            // No roadmap exists yet — try to generate one
+            try {
+              const generated = await generateStudentRoadmap();
+              if (mounted && generated.success) {
+                setRoadmapData(generated.roadmap);
+              }
+            } catch (genErr) {
+              if (mounted) {
+                const msg = genErr instanceof Error ? genErr.message : "";
+                if (msg.includes("NO_PRIMARY_CAREER")) {
+                  setNoCareer(true);
+                } else {
+                  setError(msg || "Unable to generate roadmap.");
+                }
+              }
+            }
+          }
         }
       } catch (err) {
         if (mounted) {
-          setError(err instanceof Error ? err.message : "Unable to generate roadmap.");
+          setError(err instanceof Error ? err.message : "Unable to load roadmap.");
         }
       } finally {
         if (mounted) {
@@ -1749,100 +1775,409 @@ export function RoadmapPage() {
     };
   }, []);
 
+  // Regenerate roadmap
+  async function handleRegenerate() {
+    try {
+      setGenerating(true);
+      setError("");
+      const result = await generateStudentRoadmap();
+      if (result.success) {
+        setRoadmapData(result.roadmap);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("NO_PRIMARY_CAREER")) {
+        setNoCareer(true);
+      } else {
+        setError(msg || "Unable to regenerate roadmap.");
+      }
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  // Mark item status
+  async function handleUpdateStatus(
+    itemId: string,
+    newStatus: "COMPLETE" | "CURRENT" | "UPCOMING",
+  ) {
+    try {
+      setUpdatingId(itemId);
+      await updateRoadmapItemStatus({ data: { itemId, status: newStatus } });
+
+      // Update local state
+      setRoadmapData((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          roadmap: prev.roadmap.map((item) =>
+            item.id === itemId ? { ...item, status: newStatus } : item,
+          ),
+        };
+      });
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Unable to update status.",
+      );
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  // Loading state
   if (loading) {
     return (
       <AppShell>
         <div className="flex min-h-[500px] items-center justify-center">
           <div className="flex items-center gap-3 text-amber-300">
             <Loader2 className="h-6 w-6 animate-spin text-amber-400" />
-            <span className="text-sm font-medium">Generating your career roadmap...</span>
+            <span className="text-sm font-medium">Loading your career roadmap...</span>
           </div>
         </div>
       </AppShell>
     );
   }
 
-  const items = data?.items ?? [];
+  // No primary career selected
+  if (noCareer) {
+    return (
+      <AppShell>
+        <PageHeader
+          title="Career Roadmap"
+          description="Your personalized learning roadmap based on your selected career and skill gaps."
+        />
+        <Card className="max-w-xl mx-auto text-center py-12">
+          <Map className="h-12 w-12 text-amber-400 mx-auto" />
+          <h2 className="mt-4 text-xl font-bold text-white">Choose a Career First</h2>
+          <p className="mt-2 text-sm text-slate-300 max-w-md mx-auto">
+            Your roadmap is generated from your selected primary career and current skill profile.
+            Please select a primary career direction to unlock your personalized roadmap.
+          </p>
+          <Link
+            to="/student/careers"
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 px-6 py-3 text-sm font-bold text-slate-950 shadow-lg shadow-amber-950/40 hover:from-amber-300 hover:to-amber-400 transition"
+          >
+            <Target className="h-4 w-4" />
+            Choose Career
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Card>
+      </AppShell>
+    );
+  }
+
+  // Error state
+  if (error && !roadmapData) {
+    return (
+      <AppShell>
+        <PageHeader
+          title="Career Roadmap"
+          description="Your personalized learning roadmap."
+        />
+        <Card className="rounded-3xl border border-rose-500/30 bg-rose-950/30 p-6 text-rose-300">
+          <div className="flex items-center gap-3">
+            <CircleAlert className="h-5 w-5 text-rose-400" />
+            <div>
+              <p className="font-semibold text-white">Unable to load roadmap</p>
+              <p className="mt-1 text-sm text-rose-300/80">{error}</p>
+            </div>
+          </div>
+        </Card>
+      </AppShell>
+    );
+  }
+
+  const items = roadmapData?.roadmap ?? [];
+  const completedCount = items.filter((i) => i.status === "COMPLETE").length;
+  const progressPercent = items.length > 0 ? Math.round((completedCount / items.length) * 100) : 0;
 
   return (
     <AppShell>
       <PageHeader
         title="Career Roadmap"
-        description={`Personalized learning and execution journey for target career: ${data?.targetRole || "AI Engineer"}`}
+        description={`Personalized learning journey for ${roadmapData?.careerTitle ?? "your career"}`}
+        actions={
+          <button
+            onClick={() => void handleRegenerate()}
+            disabled={generating}
+            className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-4 py-2.5 text-xs font-bold text-white hover:bg-white/10 transition disabled:opacity-50"
+          >
+            {generating ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="h-4 w-4 text-amber-400" />
+            )}
+            Regenerate Roadmap
+          </button>
+        }
       />
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <h2 className="text-xl font-bold text-white mb-6">Learning Milestones</h2>
+      {error && (
+        <div className="mb-4 rounded-2xl border border-amber-500/30 bg-amber-950/20 p-3 text-xs text-amber-200">
+          {error}
+        </div>
+      )}
 
-          <div className="space-y-6">
-            {items.map((item: any, idx: number) => (
-              <div key={item.id || idx} className="relative pl-8 border-l-2 border-amber-400/30 pb-6 last:pb-0">
-                <div className="absolute -left-[9px] top-0 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-slate-950 text-[10px] font-bold">
-                  {item.step || idx + 1}
-                </div>
-
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="font-bold text-white text-base">{item.skill}</h3>
-                    <StatusBadge
-                      type={
-                        item.status === "COMPLETE"
-                          ? "success"
-                          : item.status === "CURRENT"
-                            ? "warning"
-                            : "default"
-                      }
-                    >
-                      {item.status}
-                    </StatusBadge>
-                  </div>
-
-                  <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-slate-400">
-                    <div>
-                      <span className="font-medium text-slate-300">Difficulty: </span>
-                      {item.difficulty || "Intermediate"}
-                    </div>
-                    <div>
-                      <span className="font-medium text-slate-300">Duration: </span>
-                      {item.duration || "2 weeks"}
-                    </div>
-                  </div>
-
-                  {item.project && (
-                    <div className="mt-3 p-2.5 rounded-xl bg-black/30 border border-white/5 text-xs text-slate-300">
-                      <span className="font-semibold text-pink-300">Capstone: </span>
-                      {item.project}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
+      {/* Career Context & Readiness */}
+      <div className="grid gap-5 md:grid-cols-3 mb-8">
+        <Card className="border-amber-500/30 bg-gradient-to-br from-amber-950/20 via-[#0c0919]/90 to-purple-950/20">
+          <div className="flex items-center justify-between">
+            <span className="text-xs uppercase tracking-wider text-amber-400 font-medium">Primary Career</span>
+            <Target className="h-5 w-5 text-amber-400" />
           </div>
+          <p className="mt-2 text-xl font-serif font-bold text-white">
+            {roadmapData?.careerTitle ?? "—"}
+          </p>
+          <p className="mt-1 text-xs text-slate-400">
+            {roadmapData?.careerCategory ?? ""}
+          </p>
         </Card>
 
         <Card>
-          <h2 className="text-xl font-bold text-white mb-4">Roadmap Overview</h2>
-          <p className="text-xs text-slate-300 leading-relaxed">
-            Follow these milestones in sequence to bridge high-priority skill gaps and unlock verified internship matching.
-          </p>
-
-          <div className="mt-6 space-y-3">
-            <Link
-              to="/student/skill-development"
-              className="block w-full text-center rounded-xl bg-amber-400 py-2.5 text-xs font-bold text-slate-950 hover:bg-amber-300 transition"
-            >
-              Start Skill Development
-            </Link>
-            <Link
-              to="/internships"
-              className="block w-full text-center rounded-xl border border-white/10 bg-white/5 py-2.5 text-xs font-semibold text-slate-300 hover:text-white"
-            >
-              Browse Matching Internships
-            </Link>
+          <div className="flex items-center justify-between">
+            <span className="text-xs uppercase tracking-wider text-slate-400 font-medium">Readiness</span>
+            <TrendingUp className="h-5 w-5 text-emerald-400" />
           </div>
+          <p className="mt-2 text-3xl font-serif font-bold text-amber-300">
+            {roadmapData?.readiness ?? 0}%
+          </p>
+          <div className="mt-2">
+            <ProgressBar value={roadmapData?.readiness ?? 0} />
+          </div>
+          <p className="mt-2 text-[11px] text-slate-400">
+            {roadmapData?.readinessLabel ?? ""}
+          </p>
+        </Card>
+
+        <Card>
+          <div className="flex items-center justify-between">
+            <span className="text-xs uppercase tracking-wider text-slate-400 font-medium">Progress</span>
+            <CheckCircle2 className="h-5 w-5 text-cyan-400" />
+          </div>
+          <p className="mt-2 text-3xl font-serif font-bold text-cyan-300">
+            {completedCount}/{items.length}
+          </p>
+          <div className="mt-2">
+            <ProgressBar value={progressPercent} />
+          </div>
+          <p className="mt-2 text-[11px] text-slate-400">
+            milestones completed
+          </p>
         </Card>
       </div>
+
+      {/* Empty roadmap state */}
+      {items.length === 0 && (
+        <Card className="text-center py-12">
+          <CheckCircle2 className="h-12 w-12 text-emerald-400 mx-auto" />
+          <h2 className="mt-4 text-xl font-bold text-white">All Caught Up!</h2>
+          <p className="mt-2 text-sm text-slate-300 max-w-md mx-auto">
+            Your current profile covers the priority gaps for {roadmapData?.careerTitle ?? "this career"}.
+            No roadmap items are needed at this time.
+          </p>
+          <Link
+            to="/student/skills"
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-amber-400 px-5 py-2.5 text-xs font-bold text-slate-950 hover:bg-amber-300 transition"
+          >
+            <BarChart3 className="h-4 w-4" />
+            View Skill Inventory
+          </Link>
+        </Card>
+      )}
+
+      {/* Roadmap Timeline */}
+      {items.length > 0 && (
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Card className="lg:col-span-2">
+            <h2 className="text-xl font-bold text-white mb-6">Learning Milestones</h2>
+
+            <div className="space-y-6">
+              {items.map((item) => (
+                <div
+                  key={item.id}
+                  className="relative pl-8 border-l-2 border-amber-400/30 pb-6 last:pb-0"
+                >
+                  <div className="absolute -left-[9px] top-0 flex h-4 w-4 items-center justify-center rounded-full bg-amber-400 text-slate-950 text-[10px] font-bold">
+                    {item.step}
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                    {/* Header: Skill + Status + Activity */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h3 className="font-bold text-white text-base">
+                          {item.skill}
+                        </h3>
+                        <div className="mt-1 flex items-center gap-2 flex-wrap">
+                          <StatusBadge
+                            type={
+                              item.status === "COMPLETE"
+                                ? "success"
+                                : item.status === "CURRENT"
+                                  ? "warning"
+                                  : "default"
+                            }
+                          >
+                            {item.status}
+                          </StatusBadge>
+                          {item.activityType && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-white/10 text-slate-300">
+                              {item.activityType}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Score bars */}
+                    <div className="mt-3 grid grid-cols-2 gap-3">
+                      <div>
+                        <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1">
+                          <span>Current</span>
+                          <span className="font-mono text-amber-300">
+                            {item.currentScore ?? 0}%
+                          </span>
+                        </div>
+                        <ProgressBar value={item.currentScore ?? 0} />
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1">
+                          <span>Target</span>
+                          <span className="font-mono text-emerald-300">
+                            {item.targetScore ?? 80}%
+                          </span>
+                        </div>
+                        <ProgressBar value={item.targetScore ?? 80} className="!bg-emerald-500/30" />
+                      </div>
+                    </div>
+
+                    {/* Reason */}
+                    {item.reason && (
+                      <div className="mt-3 p-2.5 rounded-xl bg-black/30 border border-white/5">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400">
+                          Why this matters
+                        </span>
+                        <p className="mt-1 text-xs text-slate-300">
+                          {item.reason}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Difficulty + Duration */}
+                    <div className="mt-3 flex items-center gap-4 text-xs text-slate-400">
+                      {item.difficulty && (
+                        <span>
+                          <span className="font-medium text-slate-300">Difficulty: </span>
+                          {item.difficulty}
+                        </span>
+                      )}
+                      {item.duration && (
+                        <span>
+                          <span className="font-medium text-slate-300">Duration: </span>
+                          {item.duration}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Resource — only real catalog resources, never invented */}
+                    {item.resource ? (
+                      <div className="mt-3 p-2.5 rounded-xl bg-white/5 border border-white/5 text-xs text-slate-300">
+                        <span className="font-semibold text-sky-300">Resource: </span>
+                        {item.resource}
+                      </div>
+                    ) : (
+                      <div className="mt-3 p-2.5 rounded-xl bg-black/20 border border-white/5 text-xs italic text-slate-500">
+                        No verified learning resource available yet
+                      </div>
+                    )}
+
+                    {/* Project */}
+                    {item.project && (
+                      <div className="mt-3 p-2.5 rounded-xl bg-black/30 border border-white/5 text-xs text-slate-300">
+                        <span className="font-semibold text-pink-300">Capstone Project: </span>
+                        {item.project}
+                      </div>
+                    )}
+
+                    {/* Action buttons */}
+                    <div className="mt-4 pt-3 border-t border-white/5 flex items-center gap-2">
+                      {item.status !== "COMPLETE" && (
+                        <button
+                          onClick={() => void handleUpdateStatus(item.id, "COMPLETE")}
+                          disabled={updatingId === item.id}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 px-3 py-1.5 text-[11px] font-semibold text-emerald-300 hover:bg-emerald-500/30 transition disabled:opacity-50"
+                        >
+                          {updatingId === item.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <CheckCircle2 className="h-3 w-3" />
+                          )}
+                          Mark Complete
+                        </button>
+                      )}
+                      {item.status === "COMPLETE" && (
+                        <button
+                          onClick={() => void handleUpdateStatus(item.id, "UPCOMING")}
+                          disabled={updatingId === item.id}
+                          className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-slate-400 hover:text-white transition disabled:opacity-50"
+                        >
+                          Reopen
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Sidebar */}
+          <Card>
+            <h2 className="text-xl font-bold text-white mb-4">Roadmap Overview</h2>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Follow these milestones in sequence to bridge high-priority skill gaps and unlock verified internship matching.
+            </p>
+
+            {/* Priority legend */}
+            <div className="mt-4 space-y-2">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Activity Types
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {items.map((item) => (
+                  <span
+                    key={item.id}
+                    className="px-2 py-0.5 rounded text-[10px] font-mono bg-white/10 text-slate-300"
+                  >
+                    {item.activityType ?? "—"}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-3">
+              <Link
+                to="/student/skill-gap"
+                className="block w-full text-center rounded-xl border border-white/10 bg-white/5 py-2.5 text-xs font-semibold text-slate-300 hover:text-white transition"
+              >
+                View Skill Gap Analysis
+              </Link>
+              <Link
+                to="/student/skill-development"
+                className="block w-full text-center rounded-xl bg-amber-400 py-2.5 text-xs font-bold text-slate-950 hover:bg-amber-300 transition"
+              >
+                Start Skill Development
+              </Link>
+              <Link
+                to="/internships"
+                className="block w-full text-center rounded-xl border border-white/10 bg-white/5 py-2.5 text-xs font-semibold text-slate-300 hover:text-white transition"
+              >
+                Browse Matching Internships
+              </Link>
+            </div>
+          </Card>
+        </div>
+      )}
     </AppShell>
   );
 }

@@ -75,7 +75,15 @@ function StatusBadge({ status }: { status: SkillGapItem["status"] }) {
   );
 }
 
-function DemandBadge({ level }: { level: string }) {
+function DemandBadge({ level }: { level: string | null }) {
+  if (!level) {
+    return (
+      <span className="rounded border border-slate-600/20 bg-slate-600/20 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-slate-400">
+        No Data
+      </span>
+    );
+  }
+
   const colors: Record<string, string> = {
     HIGH: "bg-rose-500/20 text-rose-300 border-rose-500/30",
     GROWING: "bg-orange-500/20 text-orange-300 border-orange-500/30",

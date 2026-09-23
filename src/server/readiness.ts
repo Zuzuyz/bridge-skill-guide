@@ -1,4 +1,4 @@
-import { prisma } from "./db";
+import { prisma } from "./db.server";
 import type { ReadinessBreakdown } from "../types";
 
 export async function calculateStudentReadiness(studentId: string): Promise<{

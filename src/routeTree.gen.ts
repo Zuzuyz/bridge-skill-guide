@@ -16,20 +16,26 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 import { Route as CollegeDashboardRouteImport } from './routes/college.dashboard'
 import { Route as CollegeStudentsRouteImport } from './routes/college.students'
+import { Route as CompanyApplicationsRouteImport } from './routes/company.applications'
 import { Route as CompanyCandidatesRouteImport } from './routes/company.candidates'
 import { Route as CompanyDashboardRouteImport } from './routes/company.dashboard'
 import { Route as CompanyInternshipsRouteImport } from './routes/company.internships'
+import { Route as CompanyOutcomesRouteImport } from './routes/company.outcomes'
+import { Route as CompanyProfileRouteImport } from './routes/company.profile'
 import { Route as InternshipsIndexRouteImport } from './routes/internships.index'
 import { Route as InternshipsIdRouteImport } from './routes/internships.$id'
+import { Route as PassportTokenRouteImport } from './routes/passport.$token'
 import { Route as StudentApplicationsRouteImport } from './routes/student.applications'
 import { Route as StudentDashboardRouteImport } from './routes/student.dashboard'
 import { Route as StudentPassportRouteImport } from './routes/student.passport'
 import { Route as StudentProfileRouteImport } from './routes/student.profile'
+import { Route as StudentProjectsRouteImport } from './routes/student.projects'
 import { Route as StudentResumeRouteImport } from './routes/student.resume'
 import { Route as StudentRoadmapRouteImport } from './routes/student.roadmap'
 import { Route as StudentSkillDevelopmentRouteImport } from './routes/student.skill-development'
 import { Route as StudentSkillGapRouteImport } from './routes/student.skill-gap'
 import { Route as StudentSkillsRouteImport } from './routes/student.skills'
+import { Route as CompanyCandidatesIdRouteImport } from './routes/company.candidates.$id'
 import { Route as StudentAssessmentsIndexRouteImport } from './routes/student.assessments.index'
 import { Route as StudentAssessmentsIdRouteImport } from './routes/student.assessments.$id'
 import { Route as StudentCareersIndexRouteImport } from './routes/student.careers.index'
@@ -70,6 +76,11 @@ const CollegeStudentsRoute = CollegeStudentsRouteImport.update({
   path: '/college/students',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CompanyApplicationsRoute = CompanyApplicationsRouteImport.update({
+  id: '/company/applications',
+  path: '/company/applications',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CompanyCandidatesRoute = CompanyCandidatesRouteImport.update({
   id: '/company/candidates',
   path: '/company/candidates',
@@ -85,6 +96,16 @@ const CompanyInternshipsRoute = CompanyInternshipsRouteImport.update({
   path: '/company/internships',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CompanyOutcomesRoute = CompanyOutcomesRouteImport.update({
+  id: '/company/outcomes',
+  path: '/company/outcomes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompanyProfileRoute = CompanyProfileRouteImport.update({
+  id: '/company/profile',
+  path: '/company/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InternshipsIndexRoute = InternshipsIndexRouteImport.update({
   id: '/internships/',
   path: '/internships/',
@@ -93,6 +114,11 @@ const InternshipsIndexRoute = InternshipsIndexRouteImport.update({
 const InternshipsIdRoute = InternshipsIdRouteImport.update({
   id: '/internships/$id',
   path: '/internships/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PassportTokenRoute = PassportTokenRouteImport.update({
+  id: '/passport/$token',
+  path: '/passport/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StudentApplicationsRoute = StudentApplicationsRouteImport.update({
@@ -113,6 +139,11 @@ const StudentPassportRoute = StudentPassportRouteImport.update({
 const StudentProfileRoute = StudentProfileRouteImport.update({
   id: '/student/profile',
   path: '/student/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StudentProjectsRoute = StudentProjectsRouteImport.update({
+  id: '/student/projects',
+  path: '/student/projects',
   getParentRoute: () => rootRouteImport,
 } as any)
 const StudentResumeRoute = StudentResumeRouteImport.update({
@@ -139,6 +170,11 @@ const StudentSkillsRoute = StudentSkillsRouteImport.update({
   id: '/student/skills',
   path: '/student/skills',
   getParentRoute: () => rootRouteImport,
+} as any)
+const CompanyCandidatesIdRoute = CompanyCandidatesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => CompanyCandidatesRoute,
 } as any)
 const StudentAssessmentsIndexRoute = StudentAssessmentsIndexRouteImport.update({
   id: '/student/assessments/',
@@ -170,20 +206,26 @@ export interface FileRoutesByFullPath {
   '/admin/dashboard': typeof AdminDashboardRoute
   '/college/dashboard': typeof CollegeDashboardRoute
   '/college/students': typeof CollegeStudentsRoute
-  '/company/candidates': typeof CompanyCandidatesRoute
+  '/company/applications': typeof CompanyApplicationsRoute
+  '/company/candidates': typeof CompanyCandidatesRouteWithChildren
   '/company/dashboard': typeof CompanyDashboardRoute
   '/company/internships': typeof CompanyInternshipsRoute
+  '/company/outcomes': typeof CompanyOutcomesRoute
+  '/company/profile': typeof CompanyProfileRoute
   '/internships/$id': typeof InternshipsIdRoute
+  '/passport/$token': typeof PassportTokenRoute
   '/student/applications': typeof StudentApplicationsRoute
   '/student/dashboard': typeof StudentDashboardRoute
   '/student/passport': typeof StudentPassportRoute
   '/student/profile': typeof StudentProfileRoute
+  '/student/projects': typeof StudentProjectsRoute
   '/student/resume': typeof StudentResumeRoute
   '/student/roadmap': typeof StudentRoadmapRoute
   '/student/skill-development': typeof StudentSkillDevelopmentRoute
   '/student/skill-gap': typeof StudentSkillGapRoute
   '/student/skills': typeof StudentSkillsRoute
   '/internships/': typeof InternshipsIndexRoute
+  '/company/candidates/$id': typeof CompanyCandidatesIdRoute
   '/student/assessments/$id': typeof StudentAssessmentsIdRoute
   '/student/assessments/': typeof StudentAssessmentsIndexRoute
   '/student/careers/': typeof StudentCareersIndexRoute
@@ -197,20 +239,26 @@ export interface FileRoutesByTo {
   '/admin/dashboard': typeof AdminDashboardRoute
   '/college/dashboard': typeof CollegeDashboardRoute
   '/college/students': typeof CollegeStudentsRoute
-  '/company/candidates': typeof CompanyCandidatesRoute
+  '/company/applications': typeof CompanyApplicationsRoute
+  '/company/candidates': typeof CompanyCandidatesRouteWithChildren
   '/company/dashboard': typeof CompanyDashboardRoute
   '/company/internships': typeof CompanyInternshipsRoute
+  '/company/outcomes': typeof CompanyOutcomesRoute
+  '/company/profile': typeof CompanyProfileRoute
   '/internships/$id': typeof InternshipsIdRoute
+  '/passport/$token': typeof PassportTokenRoute
   '/student/applications': typeof StudentApplicationsRoute
   '/student/dashboard': typeof StudentDashboardRoute
   '/student/passport': typeof StudentPassportRoute
   '/student/profile': typeof StudentProfileRoute
+  '/student/projects': typeof StudentProjectsRoute
   '/student/resume': typeof StudentResumeRoute
   '/student/roadmap': typeof StudentRoadmapRoute
   '/student/skill-development': typeof StudentSkillDevelopmentRoute
   '/student/skill-gap': typeof StudentSkillGapRoute
   '/student/skills': typeof StudentSkillsRoute
   '/internships': typeof InternshipsIndexRoute
+  '/company/candidates/$id': typeof CompanyCandidatesIdRoute
   '/student/assessments/$id': typeof StudentAssessmentsIdRoute
   '/student/assessments': typeof StudentAssessmentsIndexRoute
   '/student/careers': typeof StudentCareersIndexRoute
@@ -225,20 +273,26 @@ export interface FileRoutesById {
   '/admin/dashboard': typeof AdminDashboardRoute
   '/college/dashboard': typeof CollegeDashboardRoute
   '/college/students': typeof CollegeStudentsRoute
-  '/company/candidates': typeof CompanyCandidatesRoute
+  '/company/applications': typeof CompanyApplicationsRoute
+  '/company/candidates': typeof CompanyCandidatesRouteWithChildren
   '/company/dashboard': typeof CompanyDashboardRoute
   '/company/internships': typeof CompanyInternshipsRoute
+  '/company/outcomes': typeof CompanyOutcomesRoute
+  '/company/profile': typeof CompanyProfileRoute
   '/internships/$id': typeof InternshipsIdRoute
+  '/passport/$token': typeof PassportTokenRoute
   '/student/applications': typeof StudentApplicationsRoute
   '/student/dashboard': typeof StudentDashboardRoute
   '/student/passport': typeof StudentPassportRoute
   '/student/profile': typeof StudentProfileRoute
+  '/student/projects': typeof StudentProjectsRoute
   '/student/resume': typeof StudentResumeRoute
   '/student/roadmap': typeof StudentRoadmapRoute
   '/student/skill-development': typeof StudentSkillDevelopmentRoute
   '/student/skill-gap': typeof StudentSkillGapRoute
   '/student/skills': typeof StudentSkillsRoute
   '/internships/': typeof InternshipsIndexRoute
+  '/company/candidates/$id': typeof CompanyCandidatesIdRoute
   '/student/assessments/$id': typeof StudentAssessmentsIdRoute
   '/student/assessments/': typeof StudentAssessmentsIndexRoute
   '/student/careers/': typeof StudentCareersIndexRoute
@@ -254,20 +308,26 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/college/dashboard'
     | '/college/students'
+    | '/company/applications'
     | '/company/candidates'
     | '/company/dashboard'
     | '/company/internships'
+    | '/company/outcomes'
+    | '/company/profile'
     | '/internships/$id'
+    | '/passport/$token'
     | '/student/applications'
     | '/student/dashboard'
     | '/student/passport'
     | '/student/profile'
+    | '/student/projects'
     | '/student/resume'
     | '/student/roadmap'
     | '/student/skill-development'
     | '/student/skill-gap'
     | '/student/skills'
     | '/internships/'
+    | '/company/candidates/$id'
     | '/student/assessments/$id'
     | '/student/assessments/'
     | '/student/careers/'
@@ -281,20 +341,26 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/college/dashboard'
     | '/college/students'
+    | '/company/applications'
     | '/company/candidates'
     | '/company/dashboard'
     | '/company/internships'
+    | '/company/outcomes'
+    | '/company/profile'
     | '/internships/$id'
+    | '/passport/$token'
     | '/student/applications'
     | '/student/dashboard'
     | '/student/passport'
     | '/student/profile'
+    | '/student/projects'
     | '/student/resume'
     | '/student/roadmap'
     | '/student/skill-development'
     | '/student/skill-gap'
     | '/student/skills'
     | '/internships'
+    | '/company/candidates/$id'
     | '/student/assessments/$id'
     | '/student/assessments'
     | '/student/careers'
@@ -308,20 +374,26 @@ export interface FileRouteTypes {
     | '/admin/dashboard'
     | '/college/dashboard'
     | '/college/students'
+    | '/company/applications'
     | '/company/candidates'
     | '/company/dashboard'
     | '/company/internships'
+    | '/company/outcomes'
+    | '/company/profile'
     | '/internships/$id'
+    | '/passport/$token'
     | '/student/applications'
     | '/student/dashboard'
     | '/student/passport'
     | '/student/profile'
+    | '/student/projects'
     | '/student/resume'
     | '/student/roadmap'
     | '/student/skill-development'
     | '/student/skill-gap'
     | '/student/skills'
     | '/internships/'
+    | '/company/candidates/$id'
     | '/student/assessments/$id'
     | '/student/assessments/'
     | '/student/careers/'
@@ -336,14 +408,19 @@ export interface RootRouteChildren {
   AdminDashboardRoute: typeof AdminDashboardRoute
   CollegeDashboardRoute: typeof CollegeDashboardRoute
   CollegeStudentsRoute: typeof CollegeStudentsRoute
-  CompanyCandidatesRoute: typeof CompanyCandidatesRoute
+  CompanyApplicationsRoute: typeof CompanyApplicationsRoute
+  CompanyCandidatesRoute: typeof CompanyCandidatesRouteWithChildren
   CompanyDashboardRoute: typeof CompanyDashboardRoute
   CompanyInternshipsRoute: typeof CompanyInternshipsRoute
+  CompanyOutcomesRoute: typeof CompanyOutcomesRoute
+  CompanyProfileRoute: typeof CompanyProfileRoute
   InternshipsIdRoute: typeof InternshipsIdRoute
+  PassportTokenRoute: typeof PassportTokenRoute
   StudentApplicationsRoute: typeof StudentApplicationsRoute
   StudentDashboardRoute: typeof StudentDashboardRoute
   StudentPassportRoute: typeof StudentPassportRoute
   StudentProfileRoute: typeof StudentProfileRoute
+  StudentProjectsRoute: typeof StudentProjectsRoute
   StudentResumeRoute: typeof StudentResumeRoute
   StudentRoadmapRoute: typeof StudentRoadmapRoute
   StudentSkillDevelopmentRoute: typeof StudentSkillDevelopmentRoute
@@ -407,6 +484,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CollegeStudentsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/company/applications': {
+      id: '/company/applications'
+      path: '/company/applications'
+      fullPath: '/company/applications'
+      preLoaderRoute: typeof CompanyApplicationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/company/candidates': {
       id: '/company/candidates'
       path: '/company/candidates'
@@ -428,6 +512,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CompanyInternshipsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/company/outcomes': {
+      id: '/company/outcomes'
+      path: '/company/outcomes'
+      fullPath: '/company/outcomes'
+      preLoaderRoute: typeof CompanyOutcomesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/company/profile': {
+      id: '/company/profile'
+      path: '/company/profile'
+      fullPath: '/company/profile'
+      preLoaderRoute: typeof CompanyProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/internships/': {
       id: '/internships/'
       path: '/internships'
@@ -440,6 +538,13 @@ declare module '@tanstack/react-router' {
       path: '/internships/$id'
       fullPath: '/internships/$id'
       preLoaderRoute: typeof InternshipsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/passport/$token': {
+      id: '/passport/$token'
+      path: '/passport/$token'
+      fullPath: '/passport/$token'
+      preLoaderRoute: typeof PassportTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/student/applications': {
@@ -468,6 +573,13 @@ declare module '@tanstack/react-router' {
       path: '/student/profile'
       fullPath: '/student/profile'
       preLoaderRoute: typeof StudentProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/student/projects': {
+      id: '/student/projects'
+      path: '/student/projects'
+      fullPath: '/student/projects'
+      preLoaderRoute: typeof StudentProjectsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/student/resume': {
@@ -505,6 +617,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudentSkillsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/company/candidates/$id': {
+      id: '/company/candidates/$id'
+      path: '/$id'
+      fullPath: '/company/candidates/$id'
+      preLoaderRoute: typeof CompanyCandidatesIdRouteImport
+      parentRoute: typeof CompanyCandidatesRoute
+    }
     '/student/assessments/': {
       id: '/student/assessments/'
       path: '/student/assessments'
@@ -536,6 +655,17 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface CompanyCandidatesRouteChildren {
+  CompanyCandidatesIdRoute: typeof CompanyCandidatesIdRoute
+}
+
+const CompanyCandidatesRouteChildren: CompanyCandidatesRouteChildren = {
+  CompanyCandidatesIdRoute: CompanyCandidatesIdRoute,
+}
+
+const CompanyCandidatesRouteWithChildren =
+  CompanyCandidatesRoute._addFileChildren(CompanyCandidatesRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AiAssistantRoute: AiAssistantRoute,
@@ -544,14 +674,19 @@ const rootRouteChildren: RootRouteChildren = {
   AdminDashboardRoute: AdminDashboardRoute,
   CollegeDashboardRoute: CollegeDashboardRoute,
   CollegeStudentsRoute: CollegeStudentsRoute,
-  CompanyCandidatesRoute: CompanyCandidatesRoute,
+  CompanyApplicationsRoute: CompanyApplicationsRoute,
+  CompanyCandidatesRoute: CompanyCandidatesRouteWithChildren,
   CompanyDashboardRoute: CompanyDashboardRoute,
   CompanyInternshipsRoute: CompanyInternshipsRoute,
+  CompanyOutcomesRoute: CompanyOutcomesRoute,
+  CompanyProfileRoute: CompanyProfileRoute,
   InternshipsIdRoute: InternshipsIdRoute,
+  PassportTokenRoute: PassportTokenRoute,
   StudentApplicationsRoute: StudentApplicationsRoute,
   StudentDashboardRoute: StudentDashboardRoute,
   StudentPassportRoute: StudentPassportRoute,
   StudentProfileRoute: StudentProfileRoute,
+  StudentProjectsRoute: StudentProjectsRoute,
   StudentResumeRoute: StudentResumeRoute,
   StudentRoadmapRoute: StudentRoadmapRoute,
   StudentSkillDevelopmentRoute: StudentSkillDevelopmentRoute,

@@ -302,7 +302,7 @@ export function CelestialCosmos({
 
   return (
     <div
-      className={`pointer-events-none absolute inset-0 overflow-hidden bg-[#05040a] ${className}`}
+      className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}
       style={{ opacity }}
     >
       <canvas

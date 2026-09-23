@@ -4,6 +4,7 @@ import {
   Building2,
   GraduationCap,
   ShieldCheck,
+  Sparkles,
   UserRound,
 } from "lucide-react";
 import { useState } from "react";
@@ -11,13 +12,11 @@ import { useState } from "react";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { CelestialCosmos } from "@/components/ui/celestial-cosmos";
-import { CosmicParticles } from "@/components/ui/cosmic-particles";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import { login, register } from "@/lib/auth-server";
 import { storage } from "@/lib/storage";
-
 import type { UserRole } from "@/types";
 
 const roles = [
@@ -59,7 +58,9 @@ export function AuthPage({
 }) {
   const navigate = useNavigate();
 
-  const [role, setRole] = useState<UserRole>("student");
+  const [role, setRole] =
+    useState<UserRole>("student");
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -72,11 +73,18 @@ export function AuthPage({
 
     const data = new FormData(event.currentTarget);
 
-    const email = String(data.get("email") ?? "").trim();
-    const password = String(data.get("password") ?? "");
-    const name = String(data.get("name") ?? "").trim();
+    const email = String(
+      data.get("email") ?? "",
+    ).trim();
 
-    // Basic validation
+    const password = String(
+      data.get("password") ?? "",
+    );
+
+    const name = String(
+      data.get("name") ?? "",
+    ).trim();
+
     if (!email.includes("@")) {
       setError("Enter a valid email address.");
       return;
@@ -119,10 +127,9 @@ export function AuthPage({
         name: name || user.name,
       });
 
-      // After registration, students must choose a career path first.
-      // After login, go straight to the role dashboard.
       const destination =
-        isRegister && user.role === "student"
+        isRegister &&
+        user.role === "student"
           ? "/student/careers"
           : routeFor(user.role);
 
@@ -130,7 +137,10 @@ export function AuthPage({
         to: destination,
       });
     } catch (err) {
-      console.error("Authentication error:", err);
+      console.error(
+        "Authentication error:",
+        err,
+      );
 
       if (err instanceof Error) {
         setError(err.message);
@@ -145,237 +155,339 @@ export function AuthPage({
   };
 
   return (
-    <div className="relative min-h-screen bg-[#05040a] text-slate-100 flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-hidden">
-      {/* Full screen ambient cosmic astrolabe & stars */}
-      <CelestialCosmos className="opacity-60" particleCount={140} showRings={false} />
+    <main className="relative min-h-screen overflow-hidden bg-[#05040a] text-white">
+      {/* =====================================================
+          COSMIC BACKGROUND
+      ===================================================== */}
 
-      <div className="relative z-10 grid w-full max-w-5xl overflow-hidden rounded-3xl border border-amber-500/20 bg-[#090714]/90 shadow-2xl shadow-amber-950/30 backdrop-blur-2xl lg:grid-cols-2">
+      <CelestialCosmos
+        className="opacity-70"
+        particleCount={180}
+        showRings={true}
+      />
 
-        {/* Left Celestial Hero Side */}
-        <div className="relative hidden bg-[#06040d] p-10 lg:flex lg:flex-col lg:justify-between border-r border-amber-500/20 overflow-hidden">
-          <CelestialCosmos className="opacity-95" particleCount={100} showRings={true} />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(139,92,246,0.18),transparent_32%),radial-gradient(circle_at_80%_70%,rgba(236,72,153,0.14),transparent_30%),linear-gradient(180deg,rgba(5,4,10,0.2),rgba(5,4,10,0.82))]" />
 
-          <div className="relative z-10">
-            <Brand />
+      {/* =====================================================
+          TOP NAV
+      ===================================================== */}
 
-            <div className="mt-16 max-w-md">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-amber-400">
-                SKILLBRIDGE · ACADEMIA × INDUSTRY
-              </p>
+      <header className="relative z-30 mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-6 sm:px-8">
+        <Link
+          to="/"
+          className="flex items-center"
+        >
+          <Brand />
+        </Link>
 
-              <h1 className="text-4xl font-serif font-medium tracking-tight text-white sm:text-5xl leading-[1.15]">
+        <Link
+          to="/"
+          className="rounded-full border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-medium text-slate-200 backdrop-blur-xl transition hover:border-white/20 hover:bg-white/10"
+        >
+          Back to home
+        </Link>
+      </header>
+
+      {/* =====================================================
+          AUTH CARD
+      ===================================================== */}
+
+      <section className="relative z-20 mx-auto flex min-h-[calc(100vh-100px)] w-full max-w-6xl items-center justify-center px-4 pb-10 sm:px-6 lg:px-8">
+        <div className="grid w-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#090714]/85 shadow-2xl shadow-black/60 backdrop-blur-2xl lg:grid-cols-[0.9fr_1.1fr]">
+
+          {/* =================================================
+              LEFT CELESTIAL PANEL
+          ================================================= */}
+
+          <div className="relative hidden min-h-[680px] overflow-hidden border-r border-white/10 bg-[#07050e] p-10 lg:flex lg:flex-col lg:justify-between">
+            <CelestialCosmos
+              className="opacity-90"
+              particleCount={120}
+              showRings={true}
+            />
+
+            <div className="relative z-10">
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/5 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.25em] text-amber-300">
+                <Sparkles className="size-3" />
+                The Celestial Path
+              </div>
+
+              <h1 className="mt-10 max-w-lg font-serif text-5xl font-medium leading-[1.04] tracking-tight text-white">
                 Learn Smarter.
                 <br />
-                <span className="bg-gradient-to-r from-amber-200 via-pink-300 to-cyan-200 bg-clip-text text-transparent">
+
+                <span className="bg-gradient-to-r from-amber-300 via-pink-400 to-cyan-300 bg-clip-text text-transparent">
                   Grow Faster.
                 </span>
               </h1>
 
-              <p className="mt-5 text-sm sm:text-base leading-relaxed text-slate-300/85 font-light">
-                Ancient wisdom meets next-gen AI skill intelligence — guiding students, colleges, and industry into a unified constellation of opportunity.
-              </p>
-            </div>
-          </div>
-
-          <div className="relative z-10 rounded-2xl border border-amber-500/30 bg-amber-950/20 p-5 backdrop-blur-md">
-            <p className="text-xs font-medium uppercase tracking-widest text-amber-300/90">
-              The Celestial Path
-            </p>
-
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-200">
-              <span className="rounded-md border border-amber-500/30 bg-white/5 px-2.5 py-1 text-amber-200">Skills</span>
-              <ArrowRight className="h-3.5 w-3.5 text-amber-400" />
-              <span className="rounded-md border border-pink-500/30 bg-white/5 px-2.5 py-1 text-pink-200">Skill Gap</span>
-              <ArrowRight className="h-3.5 w-3.5 text-pink-400" />
-              <span className="rounded-md border border-purple-500/30 bg-white/5 px-2.5 py-1 text-purple-200">Roadmap</span>
-              <ArrowRight className="h-3.5 w-3.5 text-purple-400" />
-              <span className="rounded-md border border-cyan-500/40 bg-cyan-950/40 text-cyan-200 px-2.5 py-1">Internships</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Auth Form Side */}
-        <div className="p-6 sm:p-10 flex flex-col justify-center">
-          <div className="mb-6 lg:hidden">
-            <Brand />
-          </div>
-
-          <div className="mx-auto w-full max-w-md">
-            <div className="mb-6">
-              <p className="mb-1 text-xs font-medium text-emerald-400 uppercase tracking-wider">
-                {isRegister ? "Join SkillBridge" : "Welcome Back"}
-              </p>
-
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
-                {isRegister ? "Create your account" : "Sign in to continue"}
-              </h2>
-
-              <p className="mt-1 text-sm text-slate-400">
-                {isRegister
-                  ? "Start building your career profile with SkillBridge."
-                  : "Sign in to continue your career journey."}
+              <p className="mt-7 max-w-md text-sm leading-7 text-slate-400">
+                SkillBridge connects your academic
+                journey with the skills, careers,
+                mentors, and opportunities shaping
+                the world of work.
               </p>
             </div>
 
+            {/* Journey */}
+            <div className="relative z-10 rounded-2xl border border-white/10 bg-black/20 p-5 backdrop-blur-xl">
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
+                Your journey
+              </p>
 
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-200">
+                  Skills
+                </span>
 
-            {/* Role selector */}
-            <div className="mb-5">
-              <Label className="mb-2.5 block text-xs font-medium uppercase tracking-wider text-slate-400">
-                I am joining as a
-              </Label>
+                <ArrowRight className="size-3 text-slate-600" />
 
-              <div className="grid grid-cols-2 gap-2">
-                {roles.map((item) => {
-                  const Icon = item.icon;
-                  const selected = role === item.id;
+                <span className="rounded-full border border-pink-400/20 bg-pink-400/10 px-3 py-1.5 text-xs font-semibold text-pink-200">
+                  Skill Gap
+                </span>
 
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() =>
-                        setRole(item.id as UserRole)
-                      }
-                      className={[
-                        "flex items-center gap-2 rounded-xl border px-3 py-2.5 text-xs font-medium transition",
-                        selected
-                          ? "border-emerald-500 bg-emerald-500/15 text-emerald-300 shadow-sm"
-                          : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:border-white/20",
-                      ].join(" ")}
-                    >
-                      <Icon className={`h-4 w-4 ${selected ? "text-emerald-400" : "text-slate-400"}`} />
-                      {item.label}
-                    </button>
-                  );
-                })}
+                <ArrowRight className="size-3 text-slate-600" />
+
+                <span className="rounded-full border border-purple-400/20 bg-purple-400/10 px-3 py-1.5 text-xs font-semibold text-purple-200">
+                  Roadmap
+                </span>
+
+                <ArrowRight className="size-3 text-slate-600" />
+
+                <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-200">
+                  Internships
+                </span>
               </div>
             </div>
+          </div>
 
-            {/* Form */}
-            <form
-              onSubmit={submit}
-              className="space-y-4"
-            >
-              {isRegister && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="name" className="text-xs text-slate-300">
-                    Full name
+          {/* =================================================
+              RIGHT FORM
+          ================================================= */}
+
+          <div className="flex items-center p-6 sm:p-10 lg:p-14">
+            <div className="mx-auto w-full max-w-md">
+
+              {/* Mobile brand */}
+              <div className="mb-10 lg:hidden">
+                <Brand />
+              </div>
+
+              {/* Heading */}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-300">
+                  {isRegister
+                    ? "Begin your journey"
+                    : "Welcome back"}
+                </p>
+
+                <h2 className="mt-3 font-serif text-4xl font-medium tracking-tight text-white">
+                  {isRegister
+                    ? "Create your account"
+                    : "Welcome back"}
+                </h2>
+
+                <p className="mt-3 text-sm leading-6 text-slate-400">
+                  {isRegister
+                    ? "Join SkillBridge and connect your skills with real career opportunities."
+                    : "Sign in to continue your SkillBridge journey."}
+                </p>
+              </div>
+
+              {/* =================================================
+                  ROLE SELECTOR
+              ================================================= */}
+
+              <div className="mt-8">
+                <Label className="mb-3 block text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                  I am joining as
+                </Label>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {roles.map((item) => {
+                    const Icon = item.icon;
+                    const selected =
+                      role === item.id;
+
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() =>
+                          setRole(
+                            item.id as UserRole,
+                          )
+                        }
+                        className={[
+                          "flex items-center gap-2 rounded-xl border px-3 py-3 text-xs font-semibold transition-all",
+                          selected
+                            ? "border-amber-300/40 bg-amber-300/10 text-amber-200 shadow-lg shadow-amber-950/20"
+                            : "border-white/10 bg-white/[0.03] text-slate-400 hover:border-white/20 hover:bg-white/[0.06] hover:text-white",
+                        ].join(" ")}
+                      >
+                        <Icon
+                          className={[
+                            "size-4",
+                            selected
+                              ? "text-amber-300"
+                              : "text-slate-500",
+                          ].join(" ")}
+                        />
+
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* =================================================
+                  FORM
+              ================================================= */}
+
+              <form
+                onSubmit={submit}
+                className="mt-7 space-y-5"
+              >
+                {isRegister && (
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="name"
+                      className="text-xs font-medium text-slate-300"
+                    >
+                      Full name
+                    </Label>
+
+                    <Input
+                      id="name"
+                      name="name"
+                      type="text"
+                      placeholder="Enter your full name"
+                      autoComplete="name"
+                      className="h-12 rounded-xl border-white/10 bg-white/[0.04] text-white placeholder:text-slate-600 focus-visible:border-amber-400/50 focus-visible:ring-amber-400/10"
+                      required
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="email"
+                    className="text-xs font-medium text-slate-300"
+                  >
+                    Email
                   </Label>
 
                   <Input
-                    id="name"
-                    name="name"
-                    type="text"
-                    placeholder="Enter your full name"
-                    autoComplete="name"
-                    className="rounded-xl border-white/15 bg-white/5 text-white placeholder:text-slate-500 focus-visible:border-emerald-500 focus-visible:ring-emerald-500/20"
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="you@university.edu"
+                    autoComplete="email"
+                    className="h-12 rounded-xl border-white/10 bg-white/[0.04] text-white placeholder:text-slate-600 focus-visible:border-amber-400/50 focus-visible:ring-amber-400/10"
                     required
                   />
                 </div>
-              )}
 
-              <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-xs text-slate-300">
-                  Email
-                </Label>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label
+                      htmlFor="password"
+                      className="text-xs font-medium text-slate-300"
+                    >
+                      Password
+                    </Label>
 
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="you@university.edu"
-                  autoComplete="email"
-                  className="rounded-xl border-white/15 bg-white/5 text-white placeholder:text-slate-500 focus-visible:border-emerald-500 focus-visible:ring-emerald-500/20"
-                  required
-                />
-              </div>
+                    {!isRegister && (
+                      <span className="cursor-pointer text-xs text-slate-500 transition hover:text-amber-300">
+                        Forgot password?
+                      </span>
+                    )}
+                  </div>
 
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-xs text-slate-300">
-                    Password
-                  </Label>
-                  {!isRegister && (
-                    <span className="text-xs text-slate-400 hover:text-emerald-400 cursor-pointer">
-                      Forgot password?
-                    </span>
-                  )}
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    placeholder="••••••••"
+                    autoComplete={
+                      isRegister
+                        ? "new-password"
+                        : "current-password"
+                    }
+                    className="h-12 rounded-xl border-white/10 bg-white/[0.04] text-white placeholder:text-slate-600 focus-visible:border-amber-400/50 focus-visible:ring-amber-400/10"
+                    required
+                  />
                 </div>
 
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="••••••••"
-                  autoComplete={
-                    isRegister
-                      ? "new-password"
-                      : "current-password"
-                  }
-                  className="rounded-xl border-white/15 bg-white/5 text-white placeholder:text-slate-500 focus-visible:border-emerald-500 focus-visible:ring-emerald-500/20"
-                  required
-                />
-              </div>
-
-              {error && (
-                <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-300">
-                  {error}
-                </div>
-              )}
-
-              <Button
-                type="submit"
-                className="w-full rounded-xl bg-[#5f9e77] hover:bg-[#528d68] text-white font-medium py-3 shadow-lg shadow-emerald-950/50 transition duration-200"
-                disabled={loading}
-              >
-                {loading
-                  ? isRegister
-                    ? "Creating account..."
-                    : "Signing in..."
-                  : isRegister
-                    ? "Create Account"
-                    : "Sign In"}
-
-                {!loading && (
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                {error && (
+                  <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-xs leading-5 text-rose-300">
+                    {error}
+                  </div>
                 )}
-              </Button>
-            </form>
 
-            {/* Switch login/register */}
-            <div className="mt-5 text-center text-xs text-slate-400">
-              {isRegister ? (
-                <>
-                  Already have an account?{" "}
-                  <Link
-                    to="/login"
-                    className="font-medium text-emerald-400 hover:underline"
-                  >
-                    Sign in
-                  </Link>
-                </>
-              ) : (
-                <>
-                  Don't have an account?{" "}
-                  <Link
-                    to="/register"
-                    className="font-medium text-emerald-400 hover:underline"
-                  >
-                    Create one
-                  </Link>
-                </>
-              )}
+                <Button
+                  type="submit"
+                  className="h-12 w-full rounded-xl bg-gradient-to-r from-amber-300 via-amber-200 to-yellow-300 font-bold text-[#211606] shadow-xl shadow-amber-950/30 transition hover:from-amber-200 hover:to-amber-100"
+                  disabled={loading}
+                >
+                  {loading
+                    ? isRegister
+                      ? "Creating account..."
+                      : "Signing in..."
+                    : isRegister
+                      ? "Create account"
+                      : "Sign in"}
+
+                  {!loading && (
+                    <ArrowRight className="ml-2 size-4" />
+                  )}
+                </Button>
+              </form>
+
+              {/* =================================================
+                  SWITCH AUTH MODE
+              ================================================= */}
+
+              <div className="mt-7 text-center text-xs text-slate-500">
+                {isRegister ? (
+                  <>
+                    Already have an account?{" "}
+                    <Link
+                      to="/login"
+                      className="font-semibold text-amber-300 transition hover:text-amber-200 hover:underline"
+                    >
+                      Sign in
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    Don't have an account?{" "}
+                    <Link
+                      to="/register"
+                      className="font-semibold text-amber-300 transition hover:text-amber-200 hover:underline"
+                    >
+                      Create one
+                    </Link>
+                  </>
+                )}
+              </div>
+
+              <p className="mt-7 text-center text-[10px] leading-5 text-slate-600">
+                By continuing, you agree to SkillBridge's{" "}
+                <span className="text-slate-500">
+                  Terms of Service
+                </span>{" "}
+                and{" "}
+                <span className="text-slate-500">
+                  Privacy Policy
+                </span>
+                .
+              </p>
             </div>
-
-            <p className="mt-6 text-center text-[11px] leading-4 text-slate-500">
-              By continuing, you agree to SkillBridge's{" "}
-              <span className="text-slate-400 hover:underline cursor-pointer">Terms of Service</span> and{" "}
-              <span className="text-slate-400 hover:underline cursor-pointer">Privacy Policy</span>.
-            </p>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

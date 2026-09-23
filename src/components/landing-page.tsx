@@ -2,244 +2,542 @@ import { Link } from "@tanstack/react-router";
 import {
   ArrowRight,
   BarChart3,
-  Bot,
   BriefcaseBusiness,
-  Building2,
   CheckCircle2,
-  CloudUpload,
-  GraduationCap,
+  ChevronDown,
+  Compass,
   Menu,
-  ShieldCheck,
+  Sparkles,
   Target,
   TrendingUp,
-  UserRound,
   X,
-  Sparkles,
-  Award,
-  Compass,
 } from "lucide-react";
 import { useState } from "react";
+
 import { Brand } from "@/components/brand";
-import { ScoreRing, SkillBars } from "@/components/metrics";
 import { SkillBuddyFloating } from "@/components/skillbuddy";
 import { Button } from "@/components/ui/button";
 import { CelestialCosmos } from "@/components/ui/celestial-cosmos";
 
-const coreFeatures = [
+const features = [
   {
-    title: "Career Direction & Target Role",
-    label: "Explore 22+ Paths",
-    text: "Select your target career path across AI/ML, Full-Stack, Cloud, Data, and Cybersecurity to get precise skill requirements.",
     icon: Compass,
-    tone: "bg-amber-500/20 text-amber-300 border-amber-500/30",
-    link: "/student/careers",
+    title: "Career Direction",
+    text: "Choose a target career and understand the skills employers expect.",
+    href: "/student/careers",
   },
   {
-    title: "Practical Skill Assessments",
-    label: "Verify Competency",
-    text: "Demonstrate real proficiency through standardized MCQ, Python Code Sandboxes, and interactive SQL execution challenges.",
     icon: CheckCircle2,
-    tone: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-    link: "/student/assessments",
+    title: "Skill Assessments",
+    text: "Prove your knowledge through structured technical assessments.",
+    href: "/student/assessments",
   },
   {
-    title: "Live Industry Demand Benchmarks",
-    label: "Market Intelligence",
-    text: "View real-time skill demand scores and market growth tiers mapped across high-growth technology careers.",
     icon: TrendingUp,
-    tone: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
-    link: "/student/industry-demand",
+    title: "Industry Demand",
+    text: "See which skills are being demanded across technology careers.",
+    href: "/student/industry-demand",
   },
   {
-    title: "Explainable Skill Gap & Readiness",
-    label: "Deterministic Math",
-    text: "Understand exact gaps with transparent formula calculations weighted by importance and verified evidence.",
     icon: BarChart3,
-    tone: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-    link: "/student/skill-gap",
+    title: "Skill Gap",
+    text: "Understand exactly what separates your current skills from your target role.",
+    href: "/student/skill-gap",
   },
   {
-    title: "AI Resume Skill Extraction",
-    label: "Instant Analysis",
-    text: "Upload your resume to automatically extract, categorize, and benchmark your existing technical skill proficiencies.",
-    icon: CloudUpload,
-    tone: "bg-pink-500/20 text-pink-300 border-pink-500/30",
-    link: "/student/resume",
+    icon: Target,
+    title: "Career Roadmap",
+    text: "Turn your skill gaps into a focused development journey.",
+    href: "/student/roadmap",
   },
   {
-    title: "Verified Internship Matches",
-    label: "Direct Placements",
-    text: "Connect directly with verified hiring partners based on your proven skill score rather than raw keyword matches.",
     icon: BriefcaseBusiness,
-    tone: "bg-amber-400/20 text-amber-200 border-amber-400/30",
-    link: "/internships",
+    title: "Internships",
+    text: "Discover opportunities aligned with your verified skills.",
+    href: "/internships",
   },
 ];
 
 export function LandingPage() {
-  const [menu, setMenu] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="relative min-h-screen bg-background text-foreground overflow-hidden">
-      {/* Background celestial ambient stars */}
-      <CelestialCosmos className="opacity-40" particleCount={100} showRings={false} />
+    <div className="min-h-screen overflow-x-hidden bg-[#05040a] text-white">
+      {/* Cosmic background */}
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <CelestialCosmos
+          className="opacity-80"
+          particleCount={180}
+          showRings={false}
+        />
 
-      <header className="sticky top-4 z-40 mx-auto mt-4 flex w-[calc(100%-2rem)] max-w-7xl items-center justify-between rounded-full border border-white/10 bg-card/85 px-4 py-3 shadow-lg backdrop-blur-xl md:px-6">
-        <Brand />
-        <nav className="hidden items-center gap-6 text-sm font-semibold text-muted-foreground md:flex">
-          <a href="#features" className="hover:text-primary transition">Features</a>
-          <Link to="/student/careers" className="hover:text-primary transition">Careers</Link>
-          <Link to="/student/assessments" className="hover:text-primary transition">Assessments</Link>
-          <Link to="/internships" className="hover:text-primary transition">Internships</Link>
-        </nav>
-        <div className="hidden items-center gap-2 sm:flex">
-          <Link to="/login" className="px-3 text-sm font-semibold hover:text-primary transition">
-            Log in
-          </Link>
-          <Button asChild className="rounded-full bg-primary text-primary-foreground hover:opacity-90 font-medium">
-            <Link to="/register">
-              Get started <ArrowRight />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_25%,rgba(245,158,11,0.10),transparent_30%),radial-gradient(circle_at_15%_55%,rgba(168,85,247,0.08),transparent_28%),radial-gradient(circle_at_85%_65%,rgba(34,211,238,0.07),transparent_28%)]" />
+
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_0%,rgba(5,4,10,0.15)_45%,#05040a_100%)]" />
+      </div>
+
+      {/* Navigation */}
+      <header className="fixed left-1/2 top-4 z-50 w-[calc(100%-2rem)] max-w-7xl -translate-x-1/2">
+        <div className="relative flex items-center justify-between rounded-full border border-white/10 bg-[#090714]/75 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur-2xl md:px-6">
+          <Brand />
+
+          <nav className="hidden items-center gap-7 text-sm font-medium text-slate-300 md:flex">
+            <a
+              href="#platform"
+              className="transition hover:text-amber-300"
+            >
+              Platform
+            </a>
+
+            <Link
+              to="/student/careers"
+              className="transition hover:text-amber-300"
+            >
+              Careers
             </Link>
-          </Button>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="sm:hidden"
-          onClick={() => setMenu((v) => !v)}
-          aria-label="Toggle menu"
-        >
-          {menu ? <X /> : <Menu />}
-        </Button>
-        {menu && (
-          <nav className="absolute left-0 right-0 top-16 mx-2 grid gap-2 rounded-xl border bg-card p-4 shadow-xl sm:hidden">
-            <a href="#features" onClick={() => setMenu(false)}>Features</a>
-            <Link to="/student/careers" onClick={() => setMenu(false)}>Careers</Link>
-            <Link to="/student/assessments" onClick={() => setMenu(false)}>Assessments</Link>
-            <Link to="/internships" onClick={() => setMenu(false)}>Internships</Link>
-            <Link to="/login" onClick={() => setMenu(false)}>Log in</Link>
-            <Button asChild>
-              <Link to="/register" onClick={() => setMenu(false)}>Get started</Link>
-            </Button>
+
+            <Link
+              to="/student/assessments"
+              className="transition hover:text-amber-300"
+            >
+              Assessments
+            </Link>
+
+            <Link
+              to="/internships"
+              className="transition hover:text-amber-300"
+            >
+              Internships
+            </Link>
           </nav>
-        )}
+
+          <div className="hidden items-center gap-3 sm:flex">
+            <Link
+              to="/login"
+              className="px-3 text-sm font-semibold text-slate-300 transition hover:text-white"
+            >
+              Sign in
+            </Link>
+
+            <Button
+              asChild
+              className="rounded-full bg-amber-400 px-5 font-bold text-slate-950 shadow-lg shadow-amber-950/30 hover:bg-amber-300"
+            >
+              <Link to="/register">
+                Get started
+                <ArrowRight className="ml-1 size-4" />
+              </Link>
+            </Button>
+          </div>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-white sm:hidden"
+            onClick={() => setMenuOpen((value) => !value)}
+            aria-label="Open navigation"
+          >
+            {menuOpen ? <X /> : <Menu />}
+          </Button>
+
+          {menuOpen && (
+            <div className="absolute left-0 right-0 top-16 rounded-2xl border border-white/10 bg-[#090714] p-4 shadow-2xl backdrop-blur-xl sm:hidden">
+              <nav className="grid gap-2 text-sm">
+                <a
+                  href="#platform"
+                  className="rounded-lg px-3 py-2 text-slate-300 hover:bg-white/5"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Platform
+                </a>
+
+                <Link
+                  to="/student/careers"
+                  className="rounded-lg px-3 py-2 text-slate-300 hover:bg-white/5"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Careers
+                </Link>
+
+                <Link
+                  to="/student/assessments"
+                  className="rounded-lg px-3 py-2 text-slate-300 hover:bg-white/5"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Assessments
+                </Link>
+
+                <Link
+                  to="/internships"
+                  className="rounded-lg px-3 py-2 text-slate-300 hover:bg-white/5"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Internships
+                </Link>
+
+                <Link
+                  to="/login"
+                  className="rounded-lg px-3 py-2 text-slate-300 hover:bg-white/5"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  Sign in
+                </Link>
+
+                <Button
+                  asChild
+                  className="mt-2 rounded-full bg-amber-400 font-bold text-slate-950 hover:bg-amber-300"
+                >
+                  <Link
+                    to="/register"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Get started
+                  </Link>
+                </Button>
+              </nav>
+            </div>
+          )}
+        </div>
       </header>
 
       <main className="relative z-10">
-        {/* Clean Hero Section */}
-        <section className="relative mx-auto max-w-7xl px-5 pb-16 pt-16 md:pt-24 overflow-hidden">
-          <CelestialCosmos className="opacity-80" particleCount={90} showRings={true} />
-          <div className="relative z-10 mx-auto max-w-4xl text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-bold text-amber-300">
-              <Sparkles className="size-4 text-amber-400" /> Academia × Industry Skill Intelligence
-            </span>
-            <h1 className="mt-7 font-display text-4xl font-extrabold leading-tight md:text-6xl text-white">
-              Choose your career path.{" "}
-              <span className="bg-gradient-to-r from-amber-300 via-pink-300 to-cyan-300 bg-clip-text text-transparent">
-                Prove your skills.
-              </span>{" "}
-              Get hired.
+        {/* Hero */}
+        <section className="relative mx-auto flex min-h-[calc(100vh-90px)] max-w-7xl items-center px-5 pb-64 pt-28 sm:pb-72">
+          <CelestialCosmos
+            className="opacity-95"
+            particleCount={130}
+            showRings={true}
+          />
+
+          <div className="relative z-10 mx-auto max-w-5xl text-center">
+            <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-amber-400/25 bg-amber-400/10 px-4 py-2 text-xs font-semibold tracking-wide text-amber-200 backdrop-blur-md">
+              <Sparkles className="size-4 text-amber-300" />
+              ACADEMIA × INDUSTRY SKILL INTELLIGENCE
+            </div>
+
+            <h1 className="mt-8 font-serif text-5xl font-medium leading-[1.02] tracking-tight sm:text-6xl lg:text-8xl">
+              <span className="text-white">
+                Build the skills.
+              </span>
+              <br />
+
+              <span className="bg-gradient-to-r from-amber-300 via-pink-400 to-purple-400 bg-clip-text text-transparent">
+                Connect with industry.
+              </span>
+              <br />
+
+              <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-300 bg-clip-text text-transparent">
+                Launch your career.
+              </span>
             </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300 font-light">
-              SkillBridge connects students with verified skills to top hiring opportunities through objective assessments, transparent readiness scoring, and live industry demand.
+
+            <p className="mx-auto mt-7 max-w-2xl text-base leading-8 text-slate-300/85 sm:text-lg">
+              SkillBridge connects students, academia, and industry through
+              verified skills, transparent skill intelligence, personalized
+              development, and real internship opportunities.
             </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-4">
-              <Button size="lg" className="h-13 rounded-full px-8 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-950/40 hover:from-amber-300 hover:to-amber-400" asChild>
+
+            <div className="mt-9 flex flex-wrap justify-center gap-4">
+              <Button
+                asChild
+                size="lg"
+                className="h-12 rounded-full bg-amber-400 px-7 font-bold text-slate-950 shadow-xl shadow-amber-950/40 hover:bg-amber-300"
+              >
                 <Link to="/register">
-                  Choose Career Path <ArrowRight className="ml-2 h-5 w-5" />
+                  Start your journey
+                  <ArrowRight className="ml-2 size-5" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="h-13 rounded-full px-8 border-white/20 bg-white/5 text-white hover:bg-white/10" asChild>
-                <Link to="/student/assessments">Take Skill Assessment</Link>
+
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="h-12 rounded-full border-white/15 bg-white/5 px-7 text-white backdrop-blur-md hover:bg-white/10"
+              >
+                <Link to="/student/assessments">
+                  Explore assessments
+                </Link>
               </Button>
             </div>
-          </div>
-        </section>
 
-        {/* Clean Features Grid - Only Important App Features */}
-        <section id="features" className="mx-auto max-w-7xl px-5 py-16">
-          <div className="mx-auto mb-12 max-w-2xl text-center">
-            <p className="text-xs font-semibold uppercase tracking-widest text-amber-400">
-              Core Capabilities
-            </p>
-            <h2 className="mt-2 font-display text-3xl font-bold text-white sm:text-4xl">
-              Everything you need to launch your career
-            </h2>
-            <p className="mt-3 text-slate-400 text-sm sm:text-base">
-              Explore your target direction, verify your competencies, and match with verified partner roles.
-            </p>
+            <div className="mx-auto mt-14 grid max-w-3xl grid-cols-3 divide-x divide-white/10 rounded-2xl border border-white/10 bg-white/[0.025] p-5 backdrop-blur-xl">
+              <div>
+                <p className="text-lg font-bold text-white">Skills</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Evidence-based
+                </p>
+              </div>
+
+              <div>
+                <p className="text-lg font-bold text-white">Careers</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Industry mapped
+                </p>
+              </div>
+
+              <div>
+                <p className="text-lg font-bold text-white">Internships</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Verified opportunities
+                </p>
+              </div>
+            </div>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {coreFeatures.map(({ title, label, text, icon: Icon, tone, link }) => (
-              <Link
-                key={title}
-                to={link}
-                className="group rounded-3xl border border-white/10 bg-[#0c0919]/90 p-7 shadow-xl shadow-black/40 backdrop-blur-xl transition hover:-translate-y-1 hover:border-amber-500/30 flex flex-col justify-between"
-              >
+          {/* Skill intelligence preview */}
+          <div className="absolute bottom-[-190px] left-1/2 z-20 hidden w-[min(900px,85vw)] -translate-x-1/2 overflow-hidden rounded-[2rem] border border-white/10 bg-[#090714]/90 shadow-2xl shadow-black/60 backdrop-blur-2xl lg:block">
+            <div className="flex items-center justify-between border-b border-white/10 px-7 py-5">
+              <div className="flex items-center gap-4">
+                <div className="flex size-12 items-center justify-center rounded-full border border-purple-400/20 bg-purple-500/10 text-sm font-bold text-purple-300">
+                  SB
+                </div>
+
                 <div>
-                  <div className="flex items-center justify-between">
-                    <span className={`flex size-12 items-center justify-center rounded-2xl border ${tone}`}>
-                      <Icon className="size-6" />
-                    </span>
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-300">
-                      {label}
-                    </span>
-                  </div>
-                  <h3 className="mt-6 text-xl font-bold text-white group-hover:text-amber-300 transition">
-                    {title}
-                  </h3>
-                  <p className="mt-3 text-sm leading-relaxed text-slate-400">
-                    {text}
+                  <p className="font-semibold text-white">
+                    Your SkillBridge profile
+                  </p>
+
+                  <p className="text-xs text-slate-500">
+                    Your verified skills, career direction and readiness
                   </p>
                 </div>
-                <div className="mt-6 pt-4 border-t border-white/5 flex items-center gap-2 text-xs font-bold text-amber-400 group-hover:translate-x-1 transition-transform">
-                  <span>Explore feature</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </div>
+              </div>
+
+              <Link
+                to="/login"
+                className="rounded-full border border-purple-400/20 bg-purple-500/10 px-4 py-2 text-xs font-semibold text-purple-200 transition hover:bg-purple-500/20"
+              >
+                Sign in to view
+                <ArrowRight className="ml-2 inline size-3" />
               </Link>
-            ))}
+            </div>
+
+            <div className="grid gap-5 p-6 md:grid-cols-3">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Skills
+                </p>
+
+                <p className="mt-3 text-sm font-semibold text-white">
+                  Verified skill profile
+                </p>
+
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  Your assessment results and evidence appear here.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Skill gap
+                </p>
+
+                <p className="mt-3 text-sm font-semibold text-white">
+                  Know what to improve
+                </p>
+
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  Compare your current abilities with your target career.
+                </p>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-5">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Opportunities
+                </p>
+
+                <p className="mt-3 text-sm font-semibold text-white">
+                  Find relevant internships
+                </p>
+
+                <p className="mt-2 text-xs leading-5 text-slate-500">
+                  Discover opportunities connected to your real skill profile.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="absolute bottom-8 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 text-slate-500 md:flex">
+            <span className="text-[10px] uppercase tracking-[0.3em]">
+              Explore
+            </span>
+            <ChevronDown className="size-4 animate-bounce" />
           </div>
         </section>
 
-        {/* Call to Action Banner */}
-        <section className="mx-auto max-w-7xl px-5 py-16">
-          <div className="rounded-3xl border border-amber-500/30 bg-gradient-to-br from-amber-950/30 via-[#0c0919] to-purple-950/30 p-10 text-center shadow-2xl md:p-14">
-            <p className="text-xs font-bold uppercase tracking-widest text-amber-400">
-              Ready to start?
+        {/* Platform */}
+        <section
+          id="platform"
+          className="mx-auto max-w-7xl px-5 py-24"
+        >
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-400">
+              The SkillBridge constellation
             </p>
-            <h2 className="mx-auto mt-3 max-w-2xl text-3xl font-bold text-white md:text-4xl">
-              Take your first career skill assessment today.
+
+            <h2 className="mt-4 font-serif text-4xl font-medium sm:text-5xl">
+              Everything connects.
             </h2>
-            <p className="mx-auto mt-4 max-w-lg text-slate-300 text-sm">
-              Create an account, pick your target career path, and benchmark your knowledge with interactive coding and technical tests.
+
+            <p className="mt-5 text-sm leading-7 text-slate-400 sm:text-base">
+              Your career goal, skills, assessments, industry demand, skill
+              gaps, roadmap, and internship opportunities live in one
+              connected system.
             </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-4">
-              <Button size="lg" className="rounded-full px-8 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold hover:from-amber-300" asChild>
-                <Link to="/register">
-                  Get Started Now <ArrowRight className="ml-2 h-4 w-4" />
+          </div>
+
+          <div className="mt-14 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {features.map((feature) => {
+              const Icon = feature.icon;
+
+              return (
+                <Link
+                  key={feature.title}
+                  to={feature.href}
+                  className="group rounded-3xl border border-white/10 bg-[#0a0813]/80 p-6 shadow-2xl shadow-black/30 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-amber-400/25 hover:bg-[#0e0b19]"
+                >
+                  <div className="flex items-start justify-between">
+                    <span className="flex size-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-amber-300">
+                      <Icon className="size-5" />
+                    </span>
+
+                    <ArrowRight className="size-4 text-slate-600 transition group-hover:translate-x-1 group-hover:text-amber-300" />
+                  </div>
+
+                  <h3 className="mt-7 text-xl font-semibold text-white">
+                    {feature.title}
+                  </h3>
+
+                  <p className="mt-3 text-sm leading-6 text-slate-400">
+                    {feature.text}
+                  </p>
+
+                  <div className="mt-7 h-px bg-white/5" />
+
+                  <p className="mt-4 text-xs font-bold uppercase tracking-wider text-amber-400">
+                    Explore
+                  </p>
                 </Link>
-              </Button>
-              <Button size="lg" variant="outline" className="rounded-full border-white/20 bg-white/5 text-white hover:bg-white/10" asChild>
-                <Link to="/login">Sign In</Link>
-              </Button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Career flow */}
+        <section className="mx-auto max-w-7xl px-5 py-24">
+          <div className="overflow-hidden rounded-[2rem] border border-amber-400/20 bg-gradient-to-br from-amber-950/25 via-[#0a0813] to-purple-950/20 p-8 shadow-2xl shadow-black/40 md:p-14">
+            <div className="grid items-center gap-12 lg:grid-cols-[1fr_0.8fr]">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-400">
+                  Your career journey
+                </p>
+
+                <h2 className="mt-4 max-w-xl font-serif text-4xl leading-tight sm:text-5xl">
+                  From uncertainty to a clear direction.
+                </h2>
+
+                <p className="mt-5 max-w-xl text-sm leading-7 text-slate-400 sm:text-base">
+                  Start with your target role. Measure your current skills.
+                  Understand the gaps. Build your roadmap. Then discover
+                  opportunities that match what you can actually prove.
+                </p>
+
+                <Button
+                  asChild
+                  className="mt-8 rounded-full bg-amber-400 px-7 font-bold text-slate-950 hover:bg-amber-300"
+                >
+                  <Link to="/student/careers">
+                    Explore career paths
+                    <ArrowRight className="ml-2 size-4" />
+                  </Link>
+                </Button>
+              </div>
+
+              <div className="relative mx-auto aspect-square w-full max-w-md">
+                <div className="absolute inset-8 rounded-full border border-amber-400/20" />
+                <div className="absolute inset-16 rounded-full border border-pink-400/20" />
+                <div className="absolute inset-24 rounded-full border border-cyan-400/20" />
+
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="flex size-28 items-center justify-center rounded-full border border-amber-300/30 bg-amber-300/10 shadow-[0_0_80px_rgba(251,191,36,0.18)]">
+                    <Sparkles className="size-10 text-amber-200" />
+                  </div>
+                </div>
+
+                <div className="absolute left-1/2 top-4 -translate-x-1/2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-300 backdrop-blur-md">
+                  Career
+                </div>
+
+                <div className="absolute bottom-5 left-4 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-300 backdrop-blur-md">
+                  Skills
+                </div>
+
+                <div className="absolute bottom-8 right-3 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-300 backdrop-blur-md">
+                  Opportunities
+                </div>
+              </div>
             </div>
           </div>
+        </section>
+
+        {/* CTA */}
+        <section className="mx-auto max-w-5xl px-5 py-24 text-center">
+          <Sparkles className="mx-auto size-7 text-amber-300" />
+
+          <h2 className="mt-5 font-serif text-4xl sm:text-5xl">
+            Your next chapter starts here.
+          </h2>
+
+          <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-slate-400 sm:text-base">
+            Build a stronger skill profile, understand your career direction,
+            and connect your capabilities with real opportunities.
+          </p>
+
+          <Button
+            asChild
+            size="lg"
+            className="mt-8 rounded-full bg-amber-400 px-8 font-bold text-slate-950 hover:bg-amber-300"
+          >
+            <Link to="/register">
+              Get started
+              <ArrowRight className="ml-2 size-5" />
+            </Link>
+          </Button>
         </section>
       </main>
 
-      <footer className="border-t border-white/10 bg-[#05040a] py-8">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-5 sm:flex-row">
+      {/* Footer */}
+      <footer className="relative z-10 border-t border-white/10 bg-[#05040a]/90">
+        <div className="mx-auto flex max-w-7xl flex-col gap-5 px-5 py-8 sm:flex-row sm:items-center sm:justify-between">
           <Brand compact />
+
           <p className="text-xs text-slate-500">
-            © 2026 SkillBridge. Bridging Academia and Industry.
+            © 2026 SkillBridge · Bridging Academia and Industry
           </p>
-          <nav className="flex gap-5 text-xs font-semibold text-slate-400">
-            <Link to="/student/careers" className="hover:text-white">Careers</Link>
-            <Link to="/student/assessments" className="hover:text-white">Assessments</Link>
-            <Link to="/internships" className="hover:text-white">Internships</Link>
-            <Link to="/login" className="hover:text-white">Sign in</Link>
-          </nav>
+
+          <div className="flex gap-5 text-xs font-semibold text-slate-400">
+            <Link
+              to="/student/careers"
+              className="hover:text-white"
+            >
+              Careers
+            </Link>
+
+            <Link
+              to="/student/assessments"
+              className="hover:text-white"
+            >
+              Assessments
+            </Link>
+
+            <Link
+              to="/internships"
+              className="hover:text-white"
+            >
+              Internships
+            </Link>
+          </div>
         </div>
       </footer>
 

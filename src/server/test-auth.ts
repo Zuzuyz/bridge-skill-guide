@@ -1,5 +1,5 @@
 import { registerUser, loginUser } from "./auth";
-import { prisma } from "./db";
+import { prisma } from "./db.server";
 
 async function main() {
   const email = `test-${Date.now()}@skillbridge.local`;

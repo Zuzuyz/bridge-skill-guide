@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { prisma } from "./db";
+import { prisma } from "./db.server";
 
 export async function registerUser(
   name: string,

@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { prisma } from "@/server/db";
+import { prisma } from "@/server/db.server";
 import { getAuthenticatedStudentProfile } from "@/server/auth-context";
 import {
   ASSESSMENTS_CATALOG,

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Target,
@@ -33,6 +33,11 @@ import {
   getCareerBySlug,
 } from "@/lib/career-server";
 import { VerificationBadge } from "@/components/student-pages";
+import { ExplainableMatchBreakdown } from "@/components/explainable-match";
+import {
+  getCareerMatch,
+  type CareerMatchResult,
+} from "@/lib/matching-server";
 
 // ---------------------------------------------------------------------------
 // Main Career Catalog Discovery Page
@@ -576,6 +581,46 @@ function CareerDetailModal({
   onAddSecondary: (careerId: string) => Promise<void>;
   onRemove: (careerId: string) => Promise<void>;
 }) {
+  const [match, setMatch] = useState<CareerMatchResult | null>(
+    null,
+  );
+  const [isMatchLoading, setIsMatchLoading] = useState(false);
+  const [matchError, setMatchError] = useState<string | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!data?.id) {
+      setMatch(null);
+      return;
+    }
+
+    let cancelled = false;
+    setIsMatchLoading(true);
+    setMatchError(null);
+
+    getCareerMatch({ data: { careerId: data.id } })
+      .then((result) => {
+        if (!cancelled) setMatch(result);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setMatchError(
+            err instanceof Error
+              ? err.message
+              : "Your match could not be calculated right now.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsMatchLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [data?.id]);
+
   if (isLoading || !data) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md">
@@ -633,6 +678,63 @@ function CareerDetailModal({
             </div>
           </div>
         )}
+
+        {/* =====================================================
+            PHASE 10 — EXPLAINABLE MATCH
+        ===================================================== */}
+        <div className="rounded-2xl border border-sky-500/20 bg-white/[0.03] p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4 text-sky-400" />
+              <span className="text-sm font-bold text-white">
+                Your Match
+              </span>
+              {match && match.matchLabel && (
+                <span className="rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[10px] font-semibold text-sky-300">
+                  {match.matchLabel}
+                </span>
+              )}
+            </div>
+            {match && match.totalRequiredSkills > 0 && (
+              <span className="font-display text-2xl font-bold text-emerald-300">
+                {match.matchPercentage}%
+              </span>
+            )}
+          </div>
+
+          {isMatchLoading && (
+            <div className="flex items-center gap-2 text-xs text-white/60">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-sky-400" />
+              Calculating your match from your verified skill
+              profile...
+            </div>
+          )}
+
+          {!isMatchLoading && matchError && (
+            <p className="text-xs text-amber-300">{matchError}</p>
+          )}
+
+          {!isMatchLoading &&
+            !matchError &&
+            match &&
+            (match.totalRequiredSkills === 0 ? (
+              <p className="text-xs text-white/60">
+                No matching requirement data available — this
+                career has no required skills configured yet.
+              </p>
+            ) : (
+              <>
+                <p className="text-xs leading-relaxed text-white/70">
+                  {match.summary}
+                </p>
+
+                <ExplainableMatchBreakdown
+                  skills={match.skills}
+                  theme="dark"
+                />
+              </>
+            ))}
+        </div>
 
         {/* Demo Industry Demand Notice */}
         <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-3.5 flex items-start gap-3 text-xs text-amber-300/90">

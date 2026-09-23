@@ -1,5 +1,5 @@
 import type { Prisma } from "@prisma/client";
-import { prisma } from "@/server/db";
+import { prisma } from "@/server/db.server";
 import { verifySession, type SessionUser } from "@/server/session";
 
 /**

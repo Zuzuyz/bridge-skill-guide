@@ -29,6 +29,17 @@ enum InternshipMode {
   ON_SITE
 }
 
+/**
+ * =========================================================
+ * PHASE 12 — EMPLOYER PORTAL
+ * =========================================================
+ */
+
+enum InternshipStatus {
+  ACTIVE
+  CLOSED
+}
+
 enum RoadmapStatus {
   COMPLETE
   CURRENT
@@ -76,11 +87,11 @@ model StudentProfile {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  skills       StudentSkill[]
-  resumes      Resume[]
-  skillGaps    SkillGap[]
-  roadmapItems RoadmapItem[]
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills             StudentSkill[]
+  resumes            Resume[]
+  skillGaps          SkillGap[]
+  roadmapItems       RoadmapItem[]
   assessmentAttempts AssessmentAttempt[]
   credentials        Credential[]
   enrollments        LearningEnrollment[]
@@ -89,12 +100,15 @@ model StudentProfile {
 }
 
 model Company {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  name      String
-  industry  String?
-  verified  Boolean  @default(false)
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  name        String
+  industry    String?
+  description String?
+  website     String?
+  location    String?
+  verified    Boolean  @default(false)
+  createdAt   DateTime @default(now())
 
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   internships Internship[]
@@ -182,6 +196,13 @@ model RoadmapItem {
   resource   String?
   project    String?
 
+  // Phase 8 — Personalized Career Roadmap fields
+  currentScore Int?
+  targetScore  Int?
+  priority     Float?
+  reason       String?
+  activityType String?
+
   student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, step])
@@ -197,7 +218,13 @@ model Internship {
   stipend     String?
   description String?
   verified    Boolean        @default(false)
-  createdAt   DateTime       @default(now())
+
+  // Phase 12 — Employer opportunity management
+  openings Int?
+  deadline DateTime?
+  status   InternshipStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
@@ -259,88 +286,88 @@ enum ProjectVerificationStatus {
 }
 
 model Assessment {
-  id              String               @id @default(cuid())
-  title           String               @unique
+  id              String       @id @default(cuid())
+  title           String       @unique
   skillName       String
   skillId         String?
-  type            QuestionType         @default(MCQ) // MCQ | CODING | SQL | SCENARIO | PRACTICAL
-  category        String               @default("Technical") // "Technical" | "Aptitude" | "Soft Skills"
+  type            QuestionType @default(MCQ)
+  category        String       @default("Technical")
   description     String
-  difficulty      String               @default("INTERMEDIATE") // "BEGINNER" | "INTERMEDIATE" | "ADVANCED"
-  passingScore    Int                  @default(70)
-  durationMinutes Int                  @default(20)
-  totalQuestions  Int                  @default(10)
-  language        String?              // "python" | "sql" | "javascript"
-  status          String               @default("PUBLISHED") // "DRAFT" | "PUBLISHED" | "ARCHIVED"
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @default(now()) @updatedAt
+  difficulty      String       @default("INTERMEDIATE")
+  passingScore    Int          @default(70)
+  durationMinutes Int          @default(20)
+  totalQuestions  Int          @default(10)
+  language        String?
+  status          String       @default("PUBLISHED")
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @default(now()) @updatedAt
 
-  skill           Skill?               @relation(fields: [skillId], references: [id], onDelete: SetNull)
-  questions       AssessmentQuestion[]
-  attempts        AssessmentAttempt[]
+  skill     Skill?               @relation(fields: [skillId], references: [id], onDelete: SetNull)
+  questions AssessmentQuestion[]
+  attempts  AssessmentAttempt[]
 }
 
 model AssessmentQuestion {
-  id                String             @id @default(cuid())
-  assessmentId      String
-  question          String
-  questionType      QuestionType       @default(MCQ)
-  options           String[]           @default([])
-  correctAnswer     Int                @default(0) // Option Index (0-3) for MCQ
-  explanation       String?
-  points            Int                @default(10)
-  order             Int                @default(0)
-  difficulty        String             @default("MEDIUM") // "EASY" | "MEDIUM" | "HARD"
-  topic             String?
-  
+  id            String       @id @default(cuid())
+  assessmentId  String
+  question      String
+  questionType  QuestionType @default(MCQ)
+  options       String[]     @default([])
+  correctAnswer Int          @default(0)
+  explanation   String?
+  points        Int          @default(10)
+  order         Int          @default(0)
+  difficulty    String       @default("MEDIUM")
+  topic         String?
+
   // Phase 4B Coding & Practical fields
   starterCode       String?
   solutionCode      String?
-  language          String?            // "python" | "sql"
-  testCases         Json?              // [{ input, expectedOutput, isHidden, explanation, points }]
+  language          String?
+  testCases         Json?
   sampleInput       String?
   sampleOutput      String?
   constraints       String?
   functionSignature String?
-  dbSchema          String?            // SQL DDL schema
-  initialDbData     String?            // SQL fixture data
-  scenarioContext   Json?              // Structured scenario metrics & incident info
+  dbSchema          String?
+  initialDbData     String?
+  scenarioContext   Json?
 
-  assessment        Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  answers           AssessmentAnswer[]
+  assessment Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  answers    AssessmentAnswer[]
 }
 
 model AssessmentAttempt {
-  id               String             @id @default(cuid())
+  id               String    @id @default(cuid())
   studentId        String
   assessmentId     String
-  score            Int                @default(0)
-  percentage       Int                @default(0)
-  passed           Boolean            @default(false)
-  startedAt        DateTime           @default(now())
+  score            Int       @default(0)
+  percentage       Int       @default(0)
+  passed           Boolean   @default(false)
+  startedAt        DateTime  @default(now())
   completedAt      DateTime?
-  attemptNumber    Int                @default(1)
-  timeSpentSeconds Int                @default(0)
-  correctCount     Int                @default(0)
-  totalCount       Int                @default(0)
+  attemptNumber    Int       @default(1)
+  timeSpentSeconds Int       @default(0)
+  correctCount     Int       @default(0)
+  totalCount       Int       @default(0)
   details          Json?
 
-  student          StudentProfile     @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  assessment       Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
-  answers          AssessmentAnswer[]
+  student    StudentProfile     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  assessment Assessment         @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  answers    AssessmentAnswer[]
 }
 
 model AssessmentAnswer {
-  id             String             @id @default(cuid())
+  id             String  @id @default(cuid())
   attemptId      String
   questionId     String
   selectedOption Int?
-  answerText     String?            // Code string or SQL query string
-  isCorrect      Boolean            @default(false)
-  pointsEarned   Int                @default(0)
+  answerText     String?
+  isCorrect      Boolean @default(false)
+  pointsEarned   Int     @default(0)
 
-  attempt        AssessmentAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-  question       AssessmentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  attempt  AssessmentAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question AssessmentQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@unique([attemptId, questionId])
 }
@@ -360,22 +387,22 @@ model ProjectSubmission {
   submittedAt   DateTime                  @default(now())
   verifiedAt    DateTime?
 
-  student       StudentProfile            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
 
 model Credential {
-  id        String         @id @default(cuid())
+  id        String   @id @default(cuid())
   studentId String
   title     String
-  type      String         // "ASSESSMENT" | "CERTIFICATE" | "PROJECT" | "BADGE"
-  issuer    String         @default("SkillBridge")
-  verified  Boolean        @default(true)
+  type      String
+  issuer    String   @default("SkillBridge")
+  verified  Boolean  @default(true)
   score     Int?
   skills    String[]
-  issuedAt  DateTime       @default(now())
+  issuedAt  DateTime @default(now())
   url       String?
 
-  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
 
 model LearningResource {
@@ -383,38 +410,38 @@ model LearningResource {
   title       String
   provider    String
   skill       String
-  difficulty  String   // "Beginner" | "Intermediate" | "Advanced"
+  difficulty  String
   duration    String
-  type        String   // "Course" | "Interactive" | "Project"
+  type        String
   description String
   url         String
   createdAt   DateTime @default(now())
 }
 
 model IndustryProgram {
-  id          String               @id @default(cuid())
+  id          String   @id @default(cuid())
   company     String
   title       String
   duration    String
-  certificate Boolean              @default(true)
+  certificate Boolean  @default(true)
   description String
   skills      String[]
-  eligibility String               @default("All Students")
+  eligibility String   @default("All Students")
   url         String?
-  createdAt   DateTime             @default(now())
+  createdAt   DateTime @default(now())
 
   enrollments LearningEnrollment[]
 }
 
 model LearningEnrollment {
-  id         String          @id @default(cuid())
+  id         String   @id @default(cuid())
   studentId  String
   programId  String
-  status     String          @default("ENROLLED") // "ENROLLED" | "IN_PROGRESS" | "COMPLETED"
-  enrolledAt DateTime        @default(now())
+  status     String   @default("ENROLLED")
+  enrolledAt DateTime @default(now())
 
-  student    StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  program    IndustryProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  student StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  program IndustryProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, programId])
 }
@@ -424,14 +451,14 @@ model LearningEnrollment {
 // ---------------------------------------------------------------------------
 
 model Career {
-  id              String          @id @default(cuid())
-  title           String          @unique
-  slug            String          @unique
-  description     String
-  category        String
-  isActive        Boolean         @default(true)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id          String   @id @default(cuid())
+  title       String   @unique
+  slug        String   @unique
+  description String
+  category    String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   requiredSkills  CareerSkill[]
   studentCareers  StudentCareer[]
@@ -439,28 +466,28 @@ model Career {
 }
 
 model CareerSkill {
-  id          String   @id @default(cuid())
-  careerId    String
-  skillId     String
-  importance  Int      @default(3) // 1=Nice to have, 2=Useful, 3=Important, 4=Very important, 5=Core skill
+  id         String @id @default(cuid())
+  careerId   String
+  skillId    String
+  importance Int    @default(3)
 
-  career      Career   @relation(fields: [careerId], references: [id], onDelete: Cascade)
-  skill       Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  career Career @relation(fields: [careerId], references: [id], onDelete: Cascade)
+  skill  Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
   @@unique([careerId, skillId])
 }
 
 model StudentCareer {
-  id         String   @id @default(cuid())
-  studentId  String
-  careerId   String
-  isPrimary  Boolean  @default(false)
+  id        String  @id @default(cuid())
+  studentId String
+  careerId  String
+  isPrimary Boolean @default(false)
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  student    StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  career     Career         @relation(fields: [careerId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  career  Career         @relation(fields: [careerId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, careerId])
 }
@@ -486,35 +513,69 @@ enum DemandSourceType {
   MANUAL
 }
 
-model IndustryDemand {
-  id          String           @id @default(cuid())
+enum DemandConfidence {
+  HIGH
+  MEDIUM
+  LOW
+}
 
-  careerId    String
-  skillId     String
+model IndustryDemandEvidence {
+  id String @id @default(cuid())
 
-  demandLevel DemandLevel
-  demandScore Int?             // 0-100 index (NOT a percentage)
+  industryDemandId String
 
-  sourceType  DemandSourceType @default(DEMO)
-  sourceName  String?
-  sourceUrl   String?
+  sourceType DemandSourceType
+  sourceName String
+  sourceUrl  String?
 
-  collectedAt DateTime         @default(now())
+  metric          String?
+  rawValue        String?
+  normalizedValue Float?
+
+  collectedAt DateTime  @default(now())
   validUntil  DateTime?
 
-  notes       String?
+  notes String?
 
-  career      Career           @relation(fields: [careerId], references: [id], onDelete: Cascade)
-  skill       Skill            @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  industryDemand IndustryDemand @relation(fields: [industryDemandId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([industryDemandId])
+  @@index([sourceType])
+  @@index([collectedAt])
+}
+
+model IndustryDemand {
+  id String @id @default(cuid())
+
+  careerId String
+  skillId  String
+
+  demandLevel   DemandLevel
+  demandScore   Int?
+  confidence    DemandConfidence @default(LOW)
+  evidenceCount Int              @default(0)
+
+  sourceType DemandSourceType @default(DEMO)
+  sourceName String?
+  sourceUrl  String?
+
+  collectedAt DateTime  @default(now())
+  validUntil  DateTime?
+
+  notes String?
+
+  career Career @relation(fields: [careerId], references: [id], onDelete: Cascade)
+  skill  Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime                 @default(now())
+  updatedAt DateTime                 @updatedAt
+  evidence  IndustryDemandEvidence[]
 
   @@unique([careerId, skillId, sourceType])
   @@index([careerId])
   @@index([skillId])
   @@index([sourceType])
 }
-
-
-

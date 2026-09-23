@@ -176,6 +176,69 @@ export interface SkillPassportData {
 }
 
 // ---------------------------------------------------------------------------
+// Phase 11/12 — Public (privacy-limited) Skill Passport
+// Derived exactly from buildPublicPassportPayload() in
+// passport-public.server.ts and the getPublicPassport() handler
+// returns in passport-server.ts. Type-only — zero runtime impact.
+// ---------------------------------------------------------------------------
+
+export interface PublicSkillPassportData {
+  studentName: string;
+  college: string | null;
+  targetRole: string | null;
+  readiness: number;
+  evidenceSummary: {
+    resumeDetected: number;
+    assessmentVerified: number;
+    projectVerified: number;
+    institutionVerified: number;
+    employerVerified: number;
+  };
+  skills: Array<{
+    name: string;
+    score: number;
+    verificationLevel: VerificationLevel;
+    verificationLabel: string;
+    category: string;
+    evidence: string | null;
+  }>;
+  verifiedProjects: Array<{
+    title: string;
+    description: string;
+    skillName: string;
+    projectUrl: string | null;
+    repoUrl: string | null;
+    verifiedAt: string | null;
+  }>;
+  passedAssessments: Array<{
+    title: string;
+    category: string;
+    percentage: number;
+    completedAt: string | null;
+  }>;
+  credentials: Array<{
+    title: string;
+    type: string;
+    issuer: string;
+    score: number | null;
+    skills: string[];
+    issuedAt: string;
+    url: string | null;
+  }>;
+  careers: Array<{
+    title: string;
+    category: string;
+    isPrimary: boolean;
+  }>;
+  generatedAt: string;
+}
+
+export type PublicPassportResult =
+  | { status: "not_found" }
+  | { status: "private" }
+  | { status: "ok"; data: PublicSkillPassportData };
+
+// ---------------------------------------------------------------------------
 // Phase 6A — Industry Demand Data Types
 // ---------------------------------------------------------------------------
 
@@ -188,6 +251,11 @@ export type DemandSourceType =
   | "GOVERNMENT_DATA"
   | "PARTNER_DATA"
   | "MANUAL";
+
+export type DemandConfidence =
+  | "HIGH"
+  | "MEDIUM"
+  | "LOW";
 
 export const DEMAND_LEVEL_LABELS: Record<DemandLevel, string> = {
   HIGH: "High Demand",
@@ -220,12 +288,15 @@ export interface IndustryDemandSkillItem {
   skillName: string;
   careerImportance: number; // 1-5
   importanceLabel: string;
-  demandLevel: DemandLevel;
+  demandLevel: DemandLevel | null;
   demandLevelLabel: string;
   demandScore: number | null; // 0-100 index (NOT a percentage)
-  sourceType: DemandSourceType;
+  sourceType: DemandSourceType | null;
   sourceTypeLabel: string;
   sourceName: string | null;
+  sourceUrl: string | null;
+  confidence: DemandConfidence;
+  evidenceCount: number;
   collectedAt: string;
   validUntil: string | null;
   freshness: DemandFreshnessStatus;
@@ -250,4 +321,3 @@ export interface CareerDemandProfile {
     sourceName: string;
   };
 }
-
