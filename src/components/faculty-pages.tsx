@@ -655,6 +655,35 @@ export function FacultyStudentDetailPage({
         )}
       </section>
 
+      {/* ---------- Outcomes (Phase 15, authorized scope only) ---------- */}
+      <section className="mb-8">
+        <h2 className="mb-3 text-lg font-bold">Outcomes</h2>
+        {student.outcomes.length === 0 ? (
+          <EmptyHint>No outcomes recorded yet for this student.</EmptyHint>
+        ) : (
+          <div className="space-y-2">
+            {student.outcomes.map((outcome, index) => (
+              <div
+                key={`${outcome.type}-${outcome.occurredAt}-${index}`}
+                className="flex items-center justify-between rounded-xl border bg-card p-4 text-sm"
+              >
+                <span>
+                  <strong>{outcome.typeLabel}</strong>
+                  <span className="ml-3 text-xs text-muted-foreground">
+                    {outcome.companyName}
+                    {outcome.internshipRole ? ` · ${outcome.internshipRole}` : ""}
+                    {` · ${new Date(outcome.occurredAt).toLocaleDateString()}`}
+                  </span>
+                </span>
+                <Badge className="border-white/15 bg-white/5 text-slate-300">
+                  {outcome.status === "VERIFIED" ? "Verified" : "Recorded"}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
       {/* ---------- Faculty-private notes ---------- */}
       <section className="mb-8">
         <h2 className="mb-1 text-lg font-bold">Private support notes</h2>

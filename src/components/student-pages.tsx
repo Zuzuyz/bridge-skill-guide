@@ -48,6 +48,7 @@ import { analyzeStudentSkillGap } from "@/lib/skill-gap-server";
 import { generateStudentRoadmap, getStudentRoadmap, updateRoadmapItemStatus } from "@/lib/roadmap-server";
 import type { RoadmapItemData, RoadmapData } from "@/lib/roadmap-server";
 import { getMyApplications } from "@/lib/application-server";
+import { getStudentOutcomes } from "@/lib/outcome-server";
 import { analyzeResume } from "@/lib/resume-server";
 
 import type {
@@ -2273,7 +2274,157 @@ export function ApplicationsPage() {
           ))}
         </div>
       )}
+
+      {/* =====================================================
+          PHASE 15 — OUTCOMES & EMPLOYER FEEDBACK (student view)
+          Real persisted outcomes for the authenticated student
+          only, plus employer feedback the product permits
+          students to see. Private employer notes are excluded
+          server-side.
+      ===================================================== */}
+      <Phase15StudentOutcomesSection />
     </AppShell>
+  );
+}
+
+function Phase15StudentOutcomesSection() {
+  const [data, setData] = useState<Awaited<
+    ReturnType<typeof getStudentOutcomes>
+  > | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      try {
+        const result = await getStudentOutcomes();
+        if (mounted) setData(result);
+      } catch {
+        // Honest empty state on failure
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    void load();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="mt-8">
+        <h2 className="text-lg font-bold text-white">Outcomes &amp; feedback</h2>
+        <div className="mt-4 flex items-center gap-3 text-sm text-slate-400">
+          <Loader2 className="h-5 w-5 animate-spin text-amber-400" />
+          Loading outcomes…
+        </div>
+      </section>
+    );
+  }
+
+  const hasAny = Boolean(data && (data.outcomes.length > 0 || data.feedback.length > 0));
+
+  return (
+    <section className="mt-8">
+      <h2 className="text-lg font-bold text-white">Outcomes &amp; feedback</h2>
+      <p className="mt-1 text-xs text-slate-400">
+        Real recorded results from your internship applications. Employer
+        feedback is additional evidence — it never changes your existing
+        verified skill scores.
+      </p>
+
+      {!hasAny ? (
+        <p className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-400">
+          No outcomes recorded yet. When companies you apply to record results
+          or submit feedback, they appear here.
+        </p>
+      ) : (
+        <>
+          {data && data.outcomes.length > 0 ? (
+            <div className="mt-4 space-y-3">
+              {data.outcomes.map((outcome) => (
+                <div
+                  key={outcome.id}
+                  className="rounded-xl border border-white/10 bg-white/5 p-4"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <strong className="text-white">{outcome.typeLabel}</strong>
+                      <p className="mt-0.5 text-xs text-slate-400">
+                        {outcome.company?.name ?? "Company"}
+                        {outcome.internshipRole ? ` · ${outcome.internshipRole}` : ""}
+                        {` · ${new Date(outcome.occurredAt).toLocaleDateString()}`}
+                      </p>
+                    </div>
+                    <span
+                      className={
+                        outcome.status === "VERIFIED"
+                          ? "rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs font-bold text-emerald-200"
+                          : "rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-bold text-slate-300"
+                      }
+                    >
+                      {outcome.status === "VERIFIED" ? "Verified" : "Recorded"}
+                    </span>
+                  </div>
+                  {outcome.notes ? (
+                    <p className="mt-2 text-xs text-slate-400">{outcome.notes}</p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-slate-400">
+              No outcomes recorded yet.
+            </p>
+          )}
+
+          {data && data.feedback.length > 0 ? (
+            <>
+              <h3 className="mt-6 mb-3 text-sm font-bold uppercase tracking-wide text-slate-300">
+                Employer feedback
+              </h3>
+              <div className="space-y-3">
+                {data.feedback.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-xl border border-white/10 bg-white/5 p-4"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <strong className="text-white">{item.companyName}</strong>
+                      <span className="text-xs text-slate-400">
+                        {item.internshipRole ? `${item.internshipRole} · ` : ""}
+                        {new Date(item.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-400">
+                      {item.technicalSkillsRating != null ? (
+                        <span>Technical skills: <strong className="text-amber-300">{item.technicalSkillsRating}/5</strong></span>
+                      ) : null}
+                      {item.communicationRating != null ? (
+                        <span>Communication: <strong className="text-amber-300">{item.communicationRating}/5</strong></span>
+                      ) : null}
+                      {item.problemSolvingRating != null ? (
+                        <span>Problem solving: <strong className="text-amber-300">{item.problemSolvingRating}/5</strong></span>
+                      ) : null}
+                      {item.professionalismRating != null ? (
+                        <span>Professionalism: <strong className="text-amber-300">{item.professionalismRating}/5</strong></span>
+                      ) : null}
+                      {item.roleReadinessRating != null ? (
+                        <span>Role readiness: <strong className="text-amber-300">{item.roleReadinessRating}/5</strong></span>
+                      ) : null}
+                    </div>
+                    {item.writtenFeedback ? (
+                      <p className="mt-2 text-xs text-slate-300">{item.writtenFeedback}</p>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : null}
+        </>
+      )}
+    </section>
   );
 }
 

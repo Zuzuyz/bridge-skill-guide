@@ -5,6 +5,10 @@ import {
   getDemandFreshness,
   selectCurrentIndustryDemandBySkillId,
 } from "@/lib/industry-demand-selector.server";
+import {
+  computeCollegeOutcomeAnalytics,
+  type OutcomeEcosystemAnalytics,
+} from "@/lib/outcome-core.server";
 
 /* =========================================================
    PHASE 13 — COLLEGE ANALYTICS (SERVER-ONLY)
@@ -211,6 +215,11 @@ export type CollegeAnalyticsResult =
       internships: CollegeInternshipAnalytics;
       projects: CollegeProjectAnalytics;
       outcomes: CollegeOutcomeAnalytics;
+
+      /* Phase 15 — outcome & employer-feedback ecosystem,
+         computed by the shared outcome service over the same
+         college scope. */
+      outcomeEcosystem: OutcomeEcosystemAnalytics;
     };
 
 /* ---------------------------------------------------------
@@ -628,6 +637,10 @@ export const getCollegeAnalytics = createServerFn({ method: "GET" })
 
     /* ---------- Response ---------------------------------- */
 
+    // Phase 15: outcome/feedback ecosystem analytics from the
+    // shared outcome service (same scope, aggregated only).
+    const outcomeEcosystem = await computeCollegeOutcomeAnalytics(scope);
+
     return {
       status: "ok" as const,
       college: { name: collegeName },
@@ -711,5 +724,6 @@ export const getCollegeAnalytics = createServerFn({ method: "GET" })
         assessmentAttempts,
         passedAttempts,
       },
+      outcomeEcosystem,
     };
   });

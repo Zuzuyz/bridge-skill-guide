@@ -36,6 +36,11 @@ import {
   updateEmployerCompany,
   updateEmployerOpportunityStatus,
 } from "@/lib/employer-server";
+import {
+  createEmployerFeedback,
+  createOutcome,
+  getCompanyOutcomesEcosystem,
+} from "@/lib/outcome-server";
 
 /* =========================================================
    PHASE 12 — EMPLOYER / COMPANY PORTAL (UI)
@@ -1890,6 +1895,359 @@ export function CompanyOutcomesPage() {
           )}
         </section>
       </div>
+
+      {/* =====================================================
+          PHASE 15 — OUTCOMES & FEEDBACK ECOSYSTEM
+          The company can record legitimate outcomes and submit
+          feedback ONLY for applications it owns (server-side
+          ownership chain application → internship → company).
+          Option lists come pre-filtered from the server per the
+          existing Application status lifecycle.
+      ===================================================== */}
+      <Phase15OutcomeEcosystemSection />
     </AppShell>
+  );
+}
+
+const RATING_FIELDS = [
+  { key: "technicalSkills", label: "Technical skills" },
+  { key: "communication", label: "Communication" },
+  { key: "problemSolving", label: "Problem solving" },
+  { key: "professionalism", label: "Professionalism" },
+  { key: "roleReadiness", label: "Role readiness" },
+] as const;
+
+const OUTCOME_TYPE_LABELS: Record<string, string> = {
+  INTERNSHIP_COMPLETED: "Internship Completed",
+  JOB_OFFER: "Job Offer",
+  HIRED: "Hired",
+  NOT_SELECTED: "Not Selected",
+  WITHDRAWN: "Withdrawn",
+};
+
+function Phase15OutcomeEcosystemSection() {
+  const [data, setData] = useState<Awaited<
+    ReturnType<typeof getCompanyOutcomesEcosystem>
+  > | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [selectedApplication, setSelectedApplication] = useState("");
+  const [outcomeType, setOutcomeType] = useState("");
+  const [outcomeNotes, setOutcomeNotes] = useState("");
+  const [feedbackRatings, setFeedbackRatings] = useState<Record<string, string>>({});
+  const [feedbackText, setFeedbackText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+
+  async function load() {
+    try {
+      setLoading(true);
+      setLoadError("");
+      const result = await getCompanyOutcomesEcosystem();
+      setData(result);
+    } catch (err) {
+      setLoadError(err instanceof Error ? err.message : "Unable to load outcomes.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const selected = data?.eligible.find(
+    (item) => item.applicationId === selectedApplication,
+  );
+
+  async function submitOutcome(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedApplication || !outcomeType) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      const result = await createOutcome({
+        data: {
+          applicationId: selectedApplication,
+          type: outcomeType as
+            | "INTERNSHIP_COMPLETED"
+            | "JOB_OFFER"
+            | "HIRED"
+            | "NOT_SELECTED"
+            | "WITHDRAWN",
+          ...(outcomeNotes.trim() ? { notes: outcomeNotes.trim() } : {}),
+        },
+      });
+      setMessage(`Outcome recorded: ${result.typeLabel}.`);
+      setOutcomeType("");
+      setOutcomeNotes("");
+      await load();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Unable to record the outcome.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submitFeedback(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedApplication) return;
+    setBusy(true);
+    setMessage("");
+    try {
+      await createEmployerFeedback({
+        data: {
+          applicationId: selectedApplication,
+          technicalSkillsRating: feedbackRatings["technicalSkills"]
+            ? Number(feedbackRatings["technicalSkills"])
+            : null,
+          communicationRating: feedbackRatings["communication"]
+            ? Number(feedbackRatings["communication"])
+            : null,
+          problemSolvingRating: feedbackRatings["problemSolving"]
+            ? Number(feedbackRatings["problemSolving"])
+            : null,
+          professionalismRating: feedbackRatings["professionalism"]
+            ? Number(feedbackRatings["professionalism"])
+            : null,
+          roleReadinessRating: feedbackRatings["roleReadiness"]
+            ? Number(feedbackRatings["roleReadiness"])
+            : null,
+          ...(feedbackText.trim() ? { writtenFeedback: feedbackText.trim() } : {}),
+        },
+      });
+      setMessage("Feedback submitted. It is stored as additional evidence and never overwrites the student's existing skill records.");
+      setFeedbackRatings({});
+      setFeedbackText("");
+      await load();
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "Unable to submit feedback.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <section className="mt-6 rounded-xl border bg-card p-6 soft-shadow">
+        <h2 className="text-xl font-bold">Outcomes &amp; feedback</h2>
+        <p className="mt-4 text-sm text-muted-foreground">Loading…</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="mt-6 rounded-xl border bg-card p-6 soft-shadow">
+      <h2 className="text-xl font-bold">Outcomes &amp; feedback</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Record legitimate results and submit feedback for applications to your
+        opportunities. Options follow each application's current status.
+      </p>
+
+      {loadError ? <ErrorState message={loadError} /> : null}
+      {message ? (
+        <p className="mt-3 rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-muted-foreground">{message}</p>
+      ) : null}
+
+      {/* ---------------- Record an outcome ---------------- */}
+      <div className="mt-5 grid gap-6 lg:grid-cols-2">
+        <form onSubmit={submitOutcome} className="space-y-4 rounded-xl border p-5">
+          <h3 className="font-bold">Record an outcome</h3>
+          {!data || data.eligible.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No applications to your opportunities yet — outcomes appear once
+              candidates interact with your postings.
+            </p>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="outcome-application">Application</Label>
+                <select
+                  id="outcome-application"
+                  value={selectedApplication}
+                  onChange={(event) => {
+                    setSelectedApplication(event.target.value);
+                    setOutcomeType("");
+                  }}
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Select an application…</option>
+                  {data.eligible.map((item) => (
+                    <option key={item.applicationId} value={item.applicationId}>
+                      {item.candidateName} — {item.role} ({item.applicationStatus})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="outcome-type">Outcome</Label>
+                <select
+                  id="outcome-type"
+                  value={outcomeType}
+                  onChange={(event) => setOutcomeType(event.target.value)}
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Select an outcome…</option>
+                  {(selected?.allowedOutcomeTypes ?? []).map((type) => (
+                    <option key={type} value={type}>
+                      {OUTCOME_TYPE_LABELS[type] ?? type}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  Only outcomes valid for the application's current status are
+                  offered — e.g. "Hired" requires Selected or an existing Job
+                  Offer; "Internship Completed" requires Selected.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="outcome-notes">Notes (optional)</Label>
+                <Textarea
+                  id="outcome-notes"
+                  value={outcomeNotes}
+                  onChange={(event) => setOutcomeNotes(event.target.value)}
+                  maxLength={2000}
+                  placeholder="Context your team may need later"
+                />
+              </div>
+              <Button
+                type="submit"
+                disabled={busy || !selectedApplication || !outcomeType}
+              >
+                {busy ? "Saving…" : "Record outcome"}
+              </Button>
+            </>
+          )}
+        </form>
+
+        {/* ---------------- Submit feedback ---------------- */}
+        <form onSubmit={submitFeedback} className="space-y-4 rounded-xl border p-5">
+          <h3 className="font-bold">Submit employer feedback</h3>
+          {!data || data.eligible.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Feedback requires an application to one of your opportunities.
+            </p>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="feedback-application">Application</Label>
+                <select
+                  id="feedback-application"
+                  value={selectedApplication}
+                  onChange={(event) => setSelectedApplication(event.target.value)}
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Select an application…</option>
+                  {data.eligible.map((item) => (
+                    <option key={item.applicationId} value={item.applicationId}>
+                      {item.candidateName} — {item.role}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {RATING_FIELDS.map((field) => (
+                <div key={field.key} className="space-y-2">
+                  <Label htmlFor={`rating-${field.key}`}>{field.label} (1–5, optional)</Label>
+                  <select
+                    id={`rating-${field.key}`}
+                    value={feedbackRatings[field.key] ?? ""}
+                    onChange={(event) =>
+                      setFeedbackRatings((prev) => ({
+                        ...prev,
+                        [field.key]: event.target.value,
+                      }))
+                    }
+                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">Not rated</option>
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <option key={value} value={value}>{value}</option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+              <div className="space-y-2">
+                <Label htmlFor="feedback-text">Written feedback (optional)</Label>
+                <Textarea
+                  id="feedback-text"
+                  value={feedbackText}
+                  onChange={(event) => setFeedbackText(event.target.value)}
+                  maxLength={4000}
+                  placeholder="What this candidate demonstrated"
+                />
+              </div>
+              <Button
+                type="submit"
+                disabled={busy || !selectedApplication}
+              >
+                {busy ? "Saving…" : "Submit feedback"}
+              </Button>
+            </>
+          )}
+        </form>
+      </div>
+
+      {/* ---------------- Recorded outcomes ---------------- */}
+      <h3 className="mt-8 mb-3 font-bold">Recorded outcomes</h3>
+      {!data || data.outcomes.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No verified outcomes recorded.</p>
+      ) : (
+        <div className="space-y-2">
+          {data.outcomes.map((outcome) => (
+            <div
+              key={outcome.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-muted p-4 text-sm"
+            >
+              <span>
+                <strong>{outcome.candidateName}</strong>
+                <span className="ml-2 text-xs text-muted-foreground">
+                  {outcome.role} · {new Date(outcome.occurredAt).toLocaleDateString()}
+                </span>
+              </span>
+              <span className="flex items-center gap-2">
+                <Badge className="border-primary/40 bg-primary/10 text-primary">
+                  {outcome.typeLabel}
+                </Badge>
+                <Badge className="border-white/15 bg-white/5 text-slate-300">
+                  {outcome.status === "VERIFIED" ? "Verified" : "Recorded"}
+                </Badge>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ---------------- Submitted feedback ---------------- */}
+      <h3 className="mt-8 mb-3 font-bold">Submitted feedback</h3>
+      {!data || data.feedback.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No feedback submitted yet.</p>
+      ) : (
+        <div className="space-y-2">
+          {data.feedback.map((item) => (
+            <div key={item.id} className="rounded-lg bg-muted p-4 text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <strong>{item.candidateName}</strong>
+                <span className="text-xs text-muted-foreground">
+                  {item.role} · {new Date(item.createdAt).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                {RATING_FIELDS.map((field) => {
+                  const value = item.ratings[field.key];
+                  return value != null ? (
+                    <span key={field.key}>
+                      {field.label}: <strong className="text-foreground">{value}/5</strong>
+                    </span>
+                  ) : null;
+                })}
+              </div>
+              {item.writtenFeedback ? (
+                <p className="mt-2 text-xs text-muted-foreground">{item.writtenFeedback}</p>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }

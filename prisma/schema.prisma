@@ -100,6 +100,8 @@ model StudentProfile {
   projectSubmissions ProjectSubmission[]
   studentCareers     StudentCareer[]
   facultyNotes       FacultyNote[]
+  outcomes           Outcome[]
+  employerFeedback   EmployerFeedback[]
 }
 
 model Company {
@@ -115,6 +117,9 @@ model Company {
 
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   internships Internship[]
+
+  outcomes          Outcome[]
+  employerFeedbacks EmployerFeedback[]
 }
 
 model College {
@@ -270,6 +275,8 @@ model Internship {
 
   requiredSkills InternshipSkill[]
   applications   Application[]
+  outcomes       Outcome[]
+  employerFeedbacks EmployerFeedback[]
 }
 
 model InternshipSkill {
@@ -294,6 +301,9 @@ model Application {
 
   student    User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
   internship Internship @relation(fields: [internshipId], references: [id], onDelete: Cascade)
+
+  outcomes          Outcome[]
+  employerFeedbacks EmployerFeedback[]
 
   @@unique([studentId, internshipId])
 }
@@ -428,6 +438,75 @@ model ProjectSubmission {
   verifiedAt    DateTime?
 
   student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------------
+// Phase 15 — Outcomes / Feedback Ecosystem
+// Outcomes are persisted records created ONLY through authorized server
+// actions (an employer recording a result for its own opportunity/candidate).
+// EmployerFeedback is stored SEPARATELY from StudentSkill so employer
+// evidence is preserved alongside — never overwriting — existing verified
+// skill scores.
+// ---------------------------------------------------------------------------
+
+enum OutcomeType {
+  INTERNSHIP_COMPLETED
+  JOB_OFFER
+  HIRED
+  NOT_SELECTED
+  WITHDRAWN
+}
+
+enum OutcomeStatus {
+  RECORDED
+  VERIFIED
+}
+
+model Outcome {
+  id                  String        @id @default(cuid())
+  studentId           String
+  companyId           String
+  internshipId        String?
+  applicationId       String?
+  type                OutcomeType
+  status              OutcomeStatus @default(RECORDED)
+  occurredAt          DateTime      @default(now())
+  notes               String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  student    StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  company    Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  internship Internship?    @relation(fields: [internshipId], references: [id])
+  application Application?  @relation(fields: [applicationId], references: [id])
+
+  @@index([studentId])
+  @@index([companyId])
+  @@index([type])
+}
+
+model EmployerFeedback {
+  id                        String  @id @default(cuid())
+  companyId                 String
+  studentId                 String
+  internshipId              String?
+  applicationId             String?
+  technicalSkillsRating     Int?
+  communicationRating       Int?
+  problemSolvingRating      Int?
+  professionalismRating     Int?
+  roleReadinessRating       Int?
+  writtenFeedback           String?
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  company    Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  student    StudentProfile    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  internship Internship?       @relation(fields: [internshipId], references: [id])
+  application Application?     @relation(fields: [applicationId], references: [id])
+
+  @@index([companyId])
+  @@index([studentId])
 }
 
 model Credential {

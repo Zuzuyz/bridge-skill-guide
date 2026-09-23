@@ -3,6 +3,10 @@ import { z } from "zod";
 import { prisma } from "@/server/db.server";
 import { getCurrentSessionUser } from "@/server/auth-context";
 import { loadStudentRoadmap } from "@/lib/roadmap-core.server";
+import {
+  computeFacultyStudentOutcomes,
+  type FacultyOutcomeRow,
+} from "@/lib/outcome-core.server";
 
 /* =========================================================
    PHASE 14 — FACULTY PORTAL (SERVER-ONLY)
@@ -365,6 +369,10 @@ export type FacultyStudentDetail = {
       priority: number | null;
     }>;
   };
+  /* Phase 15 — outcome records for this student (authorized
+     scope only). Employer-writtenFeedback is private employer
+     information and is deliberately excluded. */
+  outcomes: FacultyOutcomeRow[];
   notes: Array<{
     id: string;
     note: string;
@@ -400,6 +408,7 @@ export const getFacultyStudent = createServerFn({ method: "GET" })
       profile,
       applicationRows,
       roadmap,
+      outcomes,
     ] = await Promise.all([
       prisma.studentProfile.findUnique({
         where: { id: data.studentProfileId },
@@ -467,6 +476,7 @@ export const getFacultyStudent = createServerFn({ method: "GET" })
         },
       }),
       loadStudentRoadmap(student.id),
+      computeFacultyStudentOutcomes(student.id),
     ]);
 
     if (!profile) {
@@ -550,6 +560,7 @@ export const getFacultyStudent = createServerFn({ method: "GET" })
           note: n.note,
           createdAt: n.createdAt.toISOString(),
         })),
+        outcomes,
       },
     };
   });

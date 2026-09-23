@@ -166,7 +166,7 @@ export function CollegeAnalyticsDashboard() {
     );
   }
 
-  const { overview, students, skills, skillGaps, careers, readiness, demand, internships, projects, outcomes } = analytics;
+  const { overview, students, skills, skillGaps, careers, readiness, demand, internships, projects, outcomes, outcomeEcosystem } = analytics;
 
   return (
     <AppShell
@@ -602,6 +602,102 @@ export function CollegeAnalyticsDashboard() {
           </div>
         ) : (
           <EmptyHint>No outcome data available yet.</EmptyHint>
+        )}
+      </section>
+
+      {/* ---------------- PHASE 15: OUTCOME ECOSYSTEM ---------------- */}
+      <section className="mb-8">
+        <h2 className="mb-1 text-lg font-bold">Outcome ecosystem</h2>
+        <p className="mb-4 text-xs text-muted-foreground">
+          Persisted outcomes and employer feedback recorded through authorized
+          employer actions — aggregated over students in this college's scope.
+        </p>
+        {!outcomeEcosystem.hasOutcomeData && !outcomeEcosystem.hasFeedbackData ? (
+          <EmptyHint>No verified outcomes recorded.</EmptyHint>
+        ) : (
+          <>
+            {outcomeEcosystem.hasOutcomeData ? (
+              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+                {outcomeEcosystem.byType.map((entry) => (
+                  <StatCard
+                    key={entry.type}
+                    label={entry.label}
+                    value={String(entry.count)}
+                    detail={
+                      entry.type === "INTERNSHIP_COMPLETED" ||
+                      entry.type === "JOB_OFFER" ||
+                      entry.type === "HIRED"
+                        ? "Positive outcome"
+                        : entry.type === "NOT_SELECTED"
+                          ? "Application closed by employer"
+                          : "Withdrawn from process"
+                    }
+                    icon={<Target className="size-4" />}
+                  />
+                ))}
+              </div>
+            ) : (
+              <EmptyHint>No verified outcomes recorded.</EmptyHint>
+            )}
+
+            {outcomeEcosystem.hasFeedbackData ? (
+              <div className="mt-6">
+                <h3 className="mb-3 font-bold">Employer feedback dimensions</h3>
+                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
+                  {(
+                    [
+                      ["Technical skills", outcomeEcosystem.feedbackAverages.technicalSkills],
+                      ["Communication", outcomeEcosystem.feedbackAverages.communication],
+                      ["Problem solving", outcomeEcosystem.feedbackAverages.problemSolving],
+                      ["Professionalism", outcomeEcosystem.feedbackAverages.professionalism],
+                      ["Role readiness", outcomeEcosystem.feedbackAverages.roleReadiness],
+                    ] as const
+                  ).map(([label, value]) => (
+                    <StatCard
+                      key={label}
+                      label={label}
+                      value={value != null ? `${value}/5` : "—"}
+                      detail={
+                        value != null
+                          ? `Average across ${outcomeEcosystem.feedbackCount} feedback records`
+                          : "Not rated yet"
+                      }
+                      icon={<Award className="size-4" />}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="mt-6 text-sm text-muted-foreground">
+                No employer feedback available yet.
+              </p>
+            )}
+
+            {outcomeEcosystem.hiringSkills.hasData ? (
+              <div className="mt-6">
+                <h3 className="mb-1 font-bold">Top hiring skills</h3>
+                <p className="mb-3 text-xs text-muted-foreground">
+                  Skills of students with verified HIRED or JOB_OFFER outcomes
+                  in this college's scope — ranked by distinct students.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {outcomeEcosystem.hiringSkills.skills.map((skill) => (
+                    <Badge
+                      key={skill.name}
+                      className="border-emerald-400/30 bg-emerald-400/10 text-emerald-200"
+                    >
+                      {skill.name} · {skill.studentCount} student
+                      {skill.studentCount === 1 ? "" : "s"}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="mt-6 text-sm text-muted-foreground">
+                No verified hiring-skill data available yet.
+              </p>
+            )}
+          </>
         )}
       </section>
     </AppShell>
