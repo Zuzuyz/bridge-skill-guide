@@ -8,7 +8,9 @@ import {
   Building2,
   FileSearch,
   FolderGit2,
+  Gauge,
   GraduationCap,
+  HandHeart,
   LayoutDashboard,
   LogOut,
   Map,
@@ -56,6 +58,16 @@ const nav = {
   college: [
     ["Overview", "/college/dashboard", LayoutDashboard],
     ["Student analytics", "/college/students", Users],
+  ],
+  faculty: [
+    ["Dashboard", "/faculty/dashboard", LayoutDashboard],
+    ["My students", "/faculty/students", Users],
+    ["Skill gaps", "/faculty/skill-gaps", BarChart2],
+    ["Career readiness", "/faculty/readiness", Gauge],
+    ["Projects", "/faculty/projects", FolderGit2],
+    ["Assessments", "/faculty/assessments", CheckCircle2],
+    ["Internships", "/faculty/internships", BriefcaseBusiness],
+    ["Interventions", "/faculty/interventions", HandHeart],
   ],
   admin: [
     ["Platform overview", "/admin/dashboard", LayoutDashboard],

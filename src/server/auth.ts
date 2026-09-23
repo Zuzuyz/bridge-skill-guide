@@ -5,7 +5,7 @@ export async function registerUser(
   name: string,
   email: string,
   password: string,
-  role: "student" | "company" | "college" | "admin",
+  role: "student" | "company" | "college" | "admin" | "faculty",
 ) {
   const normalizedEmail = email.trim().toLowerCase();
 
@@ -27,7 +27,11 @@ export async function registerUser(
       email: normalizedEmail,
       password: hashedPassword,
       role: role.toUpperCase() as
-        "STUDENT" | "COMPANY" | "COLLEGE" | "ADMIN",
+        | "STUDENT"
+        | "COMPANY"
+        | "COLLEGE"
+        | "ADMIN"
+        | "FACULTY",
       ...(role === "student"
         ? {
             studentProfile: {
@@ -82,6 +86,10 @@ export async function loginUser(
     name: user.name,
     email: user.email,
     role: user.role.toLowerCase() as
-      "student" | "company" | "college" | "admin",
+      | "student"
+      | "company"
+      | "college"
+      | "admin"
+      | "faculty",
   };
 }

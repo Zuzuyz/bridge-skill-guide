@@ -12,7 +12,7 @@ export type SessionUser = {
   id: string;
   name: string;
   email: string;
-  role: "student" | "company" | "college" | "admin";
+  role: "student" | "company" | "college" | "admin" | "faculty";
 };
 
 export async function createSession(user: SessionUser) {

@@ -1,4 +1,4 @@
-export type UserRole = "student" | "company" | "college" | "admin";
+export type UserRole = "student" | "company" | "college" | "admin" | "faculty";
 
 export type VerificationLevel =
   | "RESUME_DETECTED"

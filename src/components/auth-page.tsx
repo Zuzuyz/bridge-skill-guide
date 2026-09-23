@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Building2,
   GraduationCap,
+  HandHeart,
   ShieldCheck,
   Sparkles,
   UserRound,
@@ -24,6 +25,11 @@ const roles = [
     id: "student",
     label: "Student",
     icon: UserRound,
+  },
+  {
+    id: "faculty",
+    label: "Faculty",
+    icon: HandHeart,
   },
   {
     id: "company",
@@ -49,7 +55,9 @@ const routeFor = (role: UserRole) =>
       ? "/company/dashboard"
       : role === "college"
         ? "/college/dashboard"
-        : "/admin/dashboard";
+        : role === "faculty"
+          ? "/faculty/dashboard"
+          : "/admin/dashboard";
 
 export function AuthPage({
   mode,

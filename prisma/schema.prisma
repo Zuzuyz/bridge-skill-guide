@@ -12,6 +12,7 @@ enum UserRole {
   COMPANY
   COLLEGE
   ADMIN
+  FACULTY
 }
 
 enum ApplicationStatus {
@@ -73,7 +74,8 @@ model User {
   company        Company?
   college        College?
 
-  applications Application[]
+  applications   Application[]
+  facultyProfile FacultyProfile?
 }
 
 model StudentProfile {
@@ -97,6 +99,7 @@ model StudentProfile {
   enrollments        LearningEnrollment[]
   projectSubmissions ProjectSubmission[]
   studentCareers     StudentCareer[]
+  facultyNotes       FacultyNote[]
 }
 
 model Company {
@@ -123,6 +126,43 @@ model College {
   createdAt          DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  facultyProfiles FacultyProfile[]
+}
+
+// ---------------------------------------------------------------------------
+// Phase 14 — Faculty Portal
+// A faculty member is a User with role FACULTY and a 1:1 FacultyProfile
+// (the same session-derived resolution pattern as Company/College).
+// Authorization scope: the linked College (optional). Faculty without a
+// linked college, or a college whose registered name matches no student
+// profiles, see zero students — never a default institution.
+// ---------------------------------------------------------------------------
+
+model FacultyProfile {
+  id         String  @id @default(cuid())
+  userId     String  @unique
+  title      String?
+  department String?
+  collegeId  String?
+
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  college College?      @relation(fields: [collegeId], references: [id])
+  notes   FacultyNote[]
+}
+
+model FacultyNote {
+  id        String   @id @default(cuid())
+  facultyId String
+  studentId String
+  note      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  faculty FacultyProfile @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([facultyId, studentId])
 }
 
 model Skill {
