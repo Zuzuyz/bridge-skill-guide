@@ -2,6 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowRight,
   Building2,
+  Check,
   GraduationCap,
   HandHeart,
   ShieldCheck,
@@ -22,6 +23,7 @@ import {
   register,
 } from "@/lib/auth-server";
 
+import type { CollegeOption } from "@/lib/auth-errors";
 import type { UserRole } from "@/types";
 
 /* Dashboard routing is derived exclusively from User.role as
@@ -118,6 +120,17 @@ export function AuthPage({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  /* Faculty registration disambiguation: when the declared
+     institution matches multiple registered College records, the
+     server responds with the real candidate rows instead of
+     guessing. The registrant picks the exact college and resubmits. */
+  const [collegeOptions, setCollegeOptions] = useState<
+    CollegeOption[] | null
+  >(null);
+  const [selectedCollegeId, setSelectedCollegeId] = useState<
+    string | null
+  >(null);
+
   const isRegister = mode === "register";
 
   useEffect(() => {
@@ -197,7 +210,7 @@ export function AuthPage({
     setLoading(true);
 
     try {
-      const { user } = isRegister
+      const result = isRegister
         ? await register({
             data: {
               name,
@@ -206,6 +219,11 @@ export function AuthPage({
               role,
               ...(role === "faculty" && institution
                 ? { institution }
+                : {}),
+              ...(role === "faculty" &&
+              institution &&
+              selectedCollegeId
+                ? { collegeId: selectedCollegeId }
                 : {}),
             },
           })
@@ -219,6 +237,32 @@ export function AuthPage({
               selectedRole: role,
             },
           });
+
+      /* Faculty institution matched multiple College records: keep
+         the registrant's form data, present the real candidate
+         colleges (name + creation date), and do NOT navigate. No
+         account was created — the next submit carries collegeId. */
+      if (
+        isRegister &&
+        "needsCollegeSelection" in result &&
+        result.needsCollegeSelection
+      ) {
+        setCollegeOptions(result.collegeOptions);
+        setSelectedCollegeId(null);
+        setError(
+          "Multiple college records share this institution name. Select your college below and create your account again.",
+        );
+        return;
+      }
+
+      const { user } = result;
+
+      if (!user) {
+        setError(
+          "Registration did not return an account. Please try again.",
+        );
+        return;
+      }
 
       // Identity is established by the HTTP-only session cookie set
       // server-side in login/register. The dashboard destination is
@@ -502,6 +546,12 @@ export function AuthPage({
                       type="text"
                       placeholder="Enter your institution's name"
                       autoComplete="organization"
+                      onChange={() => {
+                        /* Editing the institution invalidates any
+                           previous ambiguity result. */
+                        setCollegeOptions(null);
+                        setSelectedCollegeId(null);
+                      }}
                       className="h-12 rounded-xl border-white/10 bg-white/[0.04] text-white placeholder:text-slate-600 focus-visible:border-amber-400/50 focus-visible:ring-amber-400/10"
                     />
                     <p className="text-[10px] leading-4 text-slate-500">
@@ -510,6 +560,51 @@ export function AuthPage({
                       the College account first, then register Faculty
                       using the same institution name.
                     </p>
+
+                    {collegeOptions && collegeOptions.length > 0 && (
+                      <div
+                        className="space-y-2 rounded-xl border border-cyan-300/30 bg-cyan-300/[0.06] p-3"
+                        role="radiogroup"
+                        aria-label="Select your college"
+                      >
+                        <p className="text-[11px] font-medium text-cyan-200">
+                          Multiple colleges share this name — select yours
+                        </p>
+                        {collegeOptions.map((option) => {
+                          const optionSelected =
+                            selectedCollegeId === option.id;
+                          return (
+                            <button
+                              key={option.id}
+                              type="button"
+                              role="radio"
+                              aria-checked={optionSelected}
+                              onClick={() =>
+                                setSelectedCollegeId(
+                                  optionSelected ? null : option.id,
+                                )
+                              }
+                              className={[
+                                "flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-xs transition-all",
+                                optionSelected
+                                  ? "border-cyan-300/60 bg-cyan-300/10 text-cyan-100"
+                                  : "border-white/10 bg-white/[0.03] text-slate-300 hover:border-white/20 hover:text-white",
+                              ].join(" ")}
+                            >
+                              <span className="font-medium">
+                                {option.name}
+                              </span>
+                              {optionSelected && (
+                                <Check className="size-3.5 shrink-0" />
+                              )}
+                            </button>
+                          );
+                        })}
+                        <p className="text-[10px] leading-4 text-slate-500">
+                          Select your college and create your account again.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 

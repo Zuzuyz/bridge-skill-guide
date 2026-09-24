@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { AmbiguousCollegeError } from "@/lib/auth-errors";
 
 /**
  * Client-safe registration options for the UI. Mirrors the
@@ -38,9 +39,14 @@ const authSchema = z.object({
     "admin",
   ]),
   /* Faculty institutional onboarding: the registrant declares
-     their institution (reused or created as a real College row).
-     Optional — omitted means collegeId stays null. */
+     their institution (linked to a real College row — never
+     created here). Optional — omitted means collegeId stays null.
+     collegeId disambiguates when multiple College rows share the
+     institution name; it is only ever accepted when it matches one
+     of the exact case-insensitive name matches (validated in
+     registerUser). */
   institution: z.string().min(2).max(120).optional(),
+  collegeId: z.string().min(1).optional(),
 });
 
 export const register = createServerFn({ method: "POST" })
@@ -56,39 +62,56 @@ export const register = createServerFn({ method: "POST" })
       );
     }
 
-    const user = await registerUser(
-      data.name,
-      data.email,
-      data.password,
-      data.role,
-      data.institution,
-    );
-
-    const { createSession } = await import(
-      "@/server/session"
-    );
-
-    const token = await createSession(user);
-
     try {
-      const { setCookie } = await import(
-        "@tanstack/react-start/server"
+      const user = await registerUser(
+        data.name,
+        data.email,
+        data.password,
+        data.role,
+        data.institution,
+        data.collegeId,
       );
-      setCookie("skillbridge_session", token, {
-        httpOnly: true,
-        secure: process.env["NODE_ENV"] === "production",
-        sameSite: "lax",
-        path: "/",
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-      });
-    } catch {
-      // Safe fallback when called in non-request test contexts
-    }
 
-    return {
-      user,
-      token,
-    };
+      const { createSession } = await import(
+        "@/server/session"
+      );
+
+      const token = await createSession(user);
+
+      try {
+        const { setCookie } = await import(
+          "@tanstack/react-start/server"
+        );
+        setCookie("skillbridge_session", token, {
+          httpOnly: true,
+          secure: process.env["NODE_ENV"] === "production",
+          sameSite: "lax",
+          path: "/",
+          maxAge: 60 * 60 * 24 * 7, // 7 days
+        });
+      } catch {
+        // Safe fallback when called in non-request test contexts
+      }
+
+      return {
+        user,
+        token,
+      };
+    } catch (error) {
+      /* Surface college ambiguity as a structured, non-throwing
+         response so the registration UI can offer the real College
+         options instead of failing with a generic error. The user
+         is NOT created in this case (the throw happened before any
+         prisma.user.create). */
+      if (error instanceof AmbiguousCollegeError) {
+        return {
+          needsCollegeSelection: true as const,
+          collegeOptions: error.collegeOptions,
+        };
+      }
+
+      throw error;
+    }
   });
 
 export const login = createServerFn({ method: "POST" })
