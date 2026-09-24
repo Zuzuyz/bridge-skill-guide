@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { prisma } from "@/server/db.server";
 import { getAuthenticatedStudentProfile } from "@/server/auth-context";
 import {
@@ -653,4 +654,51 @@ export const togglePassportShareable = createServerFn({
       shareable: updated.passportShareable,
       shareToken: updated.passportShareToken,
     };
+  });
+
+/* ------------------------------------------------------------
+   PROFILE EDIT (Phase 13 verification support)
+   Lets the authenticated student set their College/Institution
+   affiliation. This is the legitimate product flow through which
+   a student enters their college's Phase 13 analytics scope
+   (StudentProfile.college is the existing college↔student join
+   key — the scope mechanism itself is unchanged).
+
+   Authorization: the StudentProfile is ALWAYS resolved from the
+   authenticated session (getAuthenticatedStudentProfile) — no
+   studentId is accepted from the client, so a student can never
+   modify another student's profile.
+   ------------------------------------------------------------ */
+export const updateStudentProfile = createServerFn({
+  method: "POST",
+})
+  .validator(
+    z.object({
+      college: z.string().max(120).optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const student = await getAuthenticatedStudentProfile();
+    if (!student) {
+      throw new Error("Unauthorized");
+    }
+
+    /* Normalize like the existing institution matching in
+       registration (auth.ts): trim + collapse whitespace.
+       The raw client value distinguishes intent so an omitted
+       field is not confused with an explicit clear. */
+    const rawCollege = data.college?.trim().replace(/\s+/g, " ") ?? null;
+
+    /* "" (or whitespace) means the student cleared the field —
+       preserve null as the honest empty state. A non-empty value
+       is stored verbatim (case preserved; analytics matching is
+       case-insensitive, so no case normalization is needed). */
+    const college = rawCollege === "" ? null : rawCollege;
+
+    const updated = await prisma.studentProfile.update({
+      where: { id: student.id },
+      data: { college },
+    });
+
+    return { college: updated.college };
   });

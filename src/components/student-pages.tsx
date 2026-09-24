@@ -45,6 +45,7 @@ import {
   getStudentDashboard,
   getSkillPassportData,
   togglePassportShareable,
+  updateStudentProfile,
 } from "@/lib/student-server";
 import { analyzeStudentSkillGap } from "@/lib/skill-gap-server";
 import { generateStudentRoadmap, getStudentRoadmap, updateRoadmapItemStatus } from "@/lib/roadmap-server";
@@ -892,6 +893,47 @@ export function ProfilePage() {
     institutionVerified: 0,
     employerVerified: 0,
   };
+  /* Phase 13 verification support: editable College/Institution
+     affiliation. This is the legitimate product flow through which a
+     student enters their college's analytics scope — the college
+     scope mechanism itself is unchanged. Local `college` state wins
+     once the student edits, so the UI reflects the save instantly. */
+  const [collegeDraft, setCollegeDraft] = useState<string | null>(null);
+  const [savingCollege, setSavingCollege] = useState(false);
+  const [collegeFeedback, setCollegeFeedback] = useState<
+    { kind: "ok" | "error"; text: string } | null
+  >(null);
+  const effectiveCollege = collegeDraft ?? college;
+
+  const saveCollege = async () => {
+    const raw = (collegeDraft ?? college ?? "").trim();
+    if (!raw) {
+      setCollegeFeedback({
+        kind: "error",
+        text: "Enter your college or institution name first.",
+      });
+      return;
+    }
+    setSavingCollege(true);
+    setCollegeFeedback(null);
+    try {
+      const result = await updateStudentProfile({ data: { college: raw } });
+      setProfile((p) => (p ? { ...p, college: result.college } : p));
+      setCollegeDraft(null);
+      setCollegeFeedback({
+        kind: "ok",
+        text: "College affiliation saved.",
+      });
+    } catch (err) {
+      setCollegeFeedback({
+        kind: "error",
+        text: err instanceof Error ? err.message : "Failed to save college affiliation.",
+      });
+    } finally {
+      setSavingCollege(false);
+    }
+  };
+
   const initials =
     name
       ? name
@@ -914,7 +956,52 @@ export function ProfilePage() {
             <div className="mt-6 grid gap-5 md:grid-cols-2">
               <Field label="Full Name" value={name ?? "Not provided"} />
               <Field label="Email" value={email ?? "Not provided"} />
-              <Field label="College / University" value={college ?? "College not provided"} />
+              <div>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                  College / University
+                </p>
+                <input
+                  type="text"
+                  value={collegeDraft ?? college ?? ""}
+                  onChange={(e) => setCollegeDraft(e.target.value)}
+                  placeholder="College not provided"
+                  maxLength={120}
+                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200 placeholder:text-slate-500 focus:border-amber-400/60 focus:outline-none"
+                />
+                <div className="mt-2 flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={saveCollege}
+                    disabled={savingCollege || collegeDraft === null}
+                    className="rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-200 transition hover:bg-amber-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {savingCollege ? "Saving…" : "Save college"}
+                  </button>
+                  {collegeDraft !== null && college !== null && (
+                    <button
+                      type="button"
+                      onClick={() => setCollegeDraft(null)}
+                      className="text-xs text-slate-400 hover:text-slate-200"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+                {collegeFeedback && (
+                  <p
+                    className={`mt-2 text-xs ${
+                      collegeFeedback.kind === "ok"
+                        ? "text-emerald-400"
+                        : "text-rose-400"
+                    }`}
+                  >
+                    {collegeFeedback.text}
+                    {collegeFeedback.kind === "ok"
+                      ? " Analytics for this college will include you."
+                      : ""}
+                  </p>
+                )}
+              </div>
               <Field label="Target Career" value={targetRole ?? "Career target not set"} />
             </div>
           </div>
