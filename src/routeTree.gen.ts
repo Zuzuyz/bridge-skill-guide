@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as AdminDashboardRouteImport } from './routes/admin.dashboard'
 import { Route as CollegeDashboardRouteImport } from './routes/college.dashboard'
+import { Route as CollegeFacultyRouteImport } from './routes/college.faculty'
 import { Route as CollegeStudentsRouteImport } from './routes/college.students'
 import { Route as CompanyApplicationsRouteImport } from './routes/company.applications'
 import { Route as CompanyCandidatesRouteImport } from './routes/company.candidates'
@@ -78,6 +79,11 @@ const AdminDashboardRoute = AdminDashboardRouteImport.update({
 const CollegeDashboardRoute = CollegeDashboardRouteImport.update({
   id: '/college/dashboard',
   path: '/college/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CollegeFacultyRoute = CollegeFacultyRouteImport.update({
+  id: '/college/faculty',
+  path: '/college/faculty',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CollegeStudentsRoute = CollegeStudentsRouteImport.update({
@@ -259,6 +265,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/college/dashboard': typeof CollegeDashboardRoute
+  '/college/faculty': typeof CollegeFacultyRoute
   '/college/students': typeof CollegeStudentsRoute
   '/company/applications': typeof CompanyApplicationsRoute
   '/company/candidates': typeof CompanyCandidatesRouteWithChildren
@@ -301,6 +308,7 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/college/dashboard': typeof CollegeDashboardRoute
+  '/college/faculty': typeof CollegeFacultyRoute
   '/college/students': typeof CollegeStudentsRoute
   '/company/applications': typeof CompanyApplicationsRoute
   '/company/candidates': typeof CompanyCandidatesRouteWithChildren
@@ -344,6 +352,7 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/admin/dashboard': typeof AdminDashboardRoute
   '/college/dashboard': typeof CollegeDashboardRoute
+  '/college/faculty': typeof CollegeFacultyRoute
   '/college/students': typeof CollegeStudentsRoute
   '/company/applications': typeof CompanyApplicationsRoute
   '/company/candidates': typeof CompanyCandidatesRouteWithChildren
@@ -388,6 +397,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/admin/dashboard'
     | '/college/dashboard'
+    | '/college/faculty'
     | '/college/students'
     | '/company/applications'
     | '/company/candidates'
@@ -430,6 +440,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/admin/dashboard'
     | '/college/dashboard'
+    | '/college/faculty'
     | '/college/students'
     | '/company/applications'
     | '/company/candidates'
@@ -472,6 +483,7 @@ export interface FileRouteTypes {
     | '/register'
     | '/admin/dashboard'
     | '/college/dashboard'
+    | '/college/faculty'
     | '/college/students'
     | '/company/applications'
     | '/company/candidates'
@@ -515,6 +527,7 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   AdminDashboardRoute: typeof AdminDashboardRoute
   CollegeDashboardRoute: typeof CollegeDashboardRoute
+  CollegeFacultyRoute: typeof CollegeFacultyRoute
   CollegeStudentsRoute: typeof CollegeStudentsRoute
   CompanyApplicationsRoute: typeof CompanyApplicationsRoute
   CompanyCandidatesRoute: typeof CompanyCandidatesRouteWithChildren
@@ -592,6 +605,13 @@ declare module '@tanstack/react-router' {
       path: '/college/dashboard'
       fullPath: '/college/dashboard'
       preLoaderRoute: typeof CollegeDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/college/faculty': {
+      id: '/college/faculty'
+      path: '/college/faculty'
+      fullPath: '/college/faculty'
+      preLoaderRoute: typeof CollegeFacultyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/college/students': {
@@ -853,6 +873,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   AdminDashboardRoute: AdminDashboardRoute,
   CollegeDashboardRoute: CollegeDashboardRoute,
+  CollegeFacultyRoute: CollegeFacultyRoute,
   CollegeStudentsRoute: CollegeStudentsRoute,
   CompanyApplicationsRoute: CompanyApplicationsRoute,
   CompanyCandidatesRoute: CompanyCandidatesRouteWithChildren,

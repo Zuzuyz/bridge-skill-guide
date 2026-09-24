@@ -89,7 +89,13 @@ model StudentProfile {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
+  /* Assignment (nullable): a student does NOT need a faculty member.
+     null = unassigned; the student portal is fully usable either way.
+     Set by the student's own College admin only (server-validated). */
+  facultyId String?
+
   user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  faculty            FacultyProfile?      @relation(fields: [facultyId], references: [id], onDelete: SetNull)
   skills             StudentSkill[]
   resumes            Resume[]
   skillGaps          SkillGap[]
@@ -139,9 +145,11 @@ model College {
 // Phase 14 — Faculty Portal
 // A faculty member is a User with role FACULTY and a 1:1 FacultyProfile
 // (the same session-derived resolution pattern as Company/College).
-// Authorization scope: the linked College (optional). Faculty without a
-// linked college, or a college whose registered name matches no student
-// profiles, see zero students — never a default institution.
+// Authorization scope: DIRECT ASSIGNMENT — a faculty member sees only the
+// students explicitly assigned to them (StudentProfile.facultyId). Faculty
+// without any assigned students see zero students — never a default
+// institution. Assignment is managed exclusively by the student's own
+// College admin (server-validated in college-admin-server.ts).
 // ---------------------------------------------------------------------------
 
 model FacultyProfile {
@@ -151,9 +159,10 @@ model FacultyProfile {
   department String?
   collegeId  String?
 
-  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  college College?      @relation(fields: [collegeId], references: [id])
-  notes   FacultyNote[]
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  college  College?         @relation(fields: [collegeId], references: [id])
+  notes    FacultyNote[]
+  students StudentProfile[]
 }
 
 model FacultyNote {

@@ -11,6 +11,50 @@ import {
   type SkillPassportData,
 } from "@/types";
 import { calculateStudentReadiness } from "@/server/readiness";
+import type { CareerDemandProfile } from "@/types";
+
+/* -------------------------------------------------------------
+   Career Journey — shared contract between the server-side
+   real-state computation and the dashboard component. `href` is
+   a literal union so the typed router Link accepts every CTA.
+------------------------------------------------------------- */
+export type CareerJourneyStageId =
+  | "assessment"
+  | "skills"
+  | "skill-gaps"
+  | "career"
+  | "roadmap"
+  | "projects"
+  | "internships"
+  | "outcomes";
+
+export type CareerJourneyStageState = "COMPLETED" | "CURRENT" | "UPCOMING";
+
+export type CareerJourneyStage = {
+  id: CareerJourneyStageId;
+  label: string;
+  state: CareerJourneyStageState;
+  detail: string;
+};
+
+export type CareerJourneyAction = {
+  label: string;
+  description: string;
+  href:
+    | "/student/assessments"
+    | "/student/careers"
+    | "/student/skill-gap"
+    | "/student/skill-development"
+    | "/student/roadmap"
+    | "/student/projects"
+    | "/internships"
+    | "/student/applications";
+};
+
+export type CareerJourney = {
+  stages: CareerJourneyStage[];
+  nextAction: CareerJourneyAction;
+};
 
 export const getStudentDashboard = createServerFn({
   method: "GET",
@@ -150,6 +194,283 @@ export const getStudentDashboard = createServerFn({
       }
     : null;
 
+  /* ------------------------------------------------------------------
+     Career Journey — real state derived from this student's persisted
+     records only. No invented progress values; every stage reflects an
+     actual database condition.
+  ------------------------------------------------------------------ */
+  const hasAssessmentAttempt = student.assessmentAttempts.length > 0;
+  const skillsCount = student.skills.length;
+
+  /* ----------------------------------------------------------------
+     Phase 7 skill-gap state — the SkillGap table is the persisted
+     source of truth. computeCareerSkillGap() upserts one row per
+     required skill of the analyzed career INCLUDING STRONG rows, so
+     scoped to the primary career's required skills:
+       0 rows  -> analysis not run for this career
+       rows all STRONG -> analysis run, zero priority gaps
+       rows non-STRONG -> priority gaps exist
+     Rows left over from a previously analyzed career must not count
+     toward the current career's analysis. Status is reused verbatim
+     from SkillGap.status — no new scoring. Ascending score ordering
+     (MISSING first) mirrors Phase 7's own missing-first priority.
+  ---------------------------------------------------------------- */
+  const primaryRequiredSkillIds =
+    primaryCareerEntry
+      ? new Set(
+          primaryCareerEntry.career.requiredSkills.map((rs) => rs.skillId),
+        )
+      : null;
+  const careerRequiredSkillCount = primaryRequiredSkillIds?.size ?? 0;
+  const careerTrackedGaps =
+    primaryRequiredSkillIds !== null
+      ? student.skillGaps.filter((gap) =>
+          primaryRequiredSkillIds.has(gap.skillId),
+        )
+      : student.skillGaps;
+  const trackedGapCount = student.skillGaps.length;
+  const careerTrackedGapCount = careerTrackedGaps.length;
+  const priorityGaps = careerTrackedGaps
+    .filter((gap) => gap.status !== "STRONG")
+    .sort((a, b) => a.score - b.score);
+  const priorityGapCount = priorityGaps.length;
+  const topPriorityGapName = priorityGaps[0]?.skill.name ?? null;
+
+  /* Gap analysis performed? A career that defines no required skills
+     has nothing to analyze (vacuously complete). With requirements,
+     zero scoped rows means the analysis has not been persisted. */
+  const gapAnalysisPerformed =
+    primaryRequiredSkillIds !== null && primaryCareerEntry
+      ? careerRequiredSkillCount === 0 || careerTrackedGapCount > 0
+      : trackedGapCount > 0;
+
+  const skillGapStageDetail = (() => {
+    if (primaryRequiredSkillIds !== null && primaryCareerEntry && careerRequiredSkillCount === 0) {
+      return "No skill requirements defined for this career";
+    }
+    if (!gapAnalysisPerformed) {
+      return primaryRequiredSkillIds !== null && primaryCareerEntry
+        ? "No gap analysis run for this career yet"
+        : "No gap analysis run yet";
+    }
+    if (priorityGapCount === 0) {
+      return `All ${careerTrackedGapCount} tracked skill${careerTrackedGapCount === 1 ? "" : "s"} are strong`;
+    }
+    return `${priorityGapCount} of ${careerTrackedGapCount} tracked gap${careerTrackedGapCount === 1 ? "" : "s"} need work${topPriorityGapName ? ` · ${topPriorityGapName}` : ""}`;
+  })();
+  const roadmapTotal = student.roadmapItems.length;
+  const roadmapCompleted = student.roadmapItems.filter(
+    (item) => item.status === "COMPLETE",
+  ).length;
+
+  const [projectCount, outcomeCount] = await Promise.all([
+    prisma.projectSubmission.count({ where: { studentId: student.id } }),
+    prisma.outcome.count({ where: { studentId: student.id } }),
+  ]);
+
+  const stageCompletion: Record<CareerJourneyStageId, boolean> = {
+    assessment: hasAssessmentAttempt,
+    skills: skillsCount > 0,
+    "skill-gaps": gapAnalysisPerformed,
+    career: primaryCareerData !== null,
+    roadmap: roadmapTotal > 0 && roadmapCompleted === roadmapTotal,
+    projects: projectCount > 0,
+    internships: applicationCount > 0,
+    outcomes: outcomeCount > 0,
+  };
+
+  const stageOrder: CareerJourneyStageId[] = [
+    "assessment",
+    "skills",
+    "skill-gaps",
+    "career",
+    "roadmap",
+    "projects",
+    "internships",
+    "outcomes",
+  ];
+
+  const currentStageId =
+    stageOrder.find((id) => !stageCompletion[id]) ?? null;
+
+  const stageState = (id: CareerJourneyStageId) => {
+    if (stageCompletion[id]) return "COMPLETED" as const;
+    if (id === currentStageId) return "CURRENT" as const;
+    return "UPCOMING" as const;
+  };
+
+  const journey: CareerJourney = {
+    stages: stageOrder.map((id) => {
+      switch (id) {
+        case "assessment":
+          return {
+            id,
+            label: "Assessment",
+            state: stageState(id),
+            detail: hasAssessmentAttempt
+              ? `${student.assessmentAttempts.length} assessment attempt${student.assessmentAttempts.length === 1 ? "" : "s"} recorded`
+              : "No assessment attempts yet",
+          };
+        case "skills":
+          return {
+            id,
+            label: "Skills",
+            state: stageState(id),
+            detail:
+              skillsCount > 0
+                ? `${skillsCount} skill${skillsCount === 1 ? "" : "s"} in your inventory`
+                : "Skill inventory is empty",
+          };
+        case "skill-gaps":
+          return {
+            id,
+            label: "Skill Gaps",
+            state: stageState(id),
+            detail: skillGapStageDetail,
+          };
+        case "career":
+          return {
+            id,
+            label: "Career Direction",
+            state: stageState(id),
+            detail: primaryCareerData
+              ? `Primary target: ${primaryCareerData.title}`
+              : "No primary career selected",
+          };
+        case "roadmap":
+          return {
+            id,
+            label: "Career Roadmap",
+            state: stageState(id),
+            detail:
+              roadmapTotal === 0
+                ? "No roadmap generated yet"
+                : `${roadmapCompleted} of ${roadmapTotal} milestone${roadmapTotal === 1 ? "" : "s"} complete`,
+          };
+        case "projects":
+          return {
+            id,
+            label: "Projects",
+            state: stageState(id),
+            detail:
+              projectCount > 0
+                ? `${projectCount} project submission${projectCount === 1 ? "" : "s"}`
+                : "No projects submitted yet",
+          };
+        case "internships":
+          return {
+            id,
+            label: "Internships",
+            state: stageState(id),
+            detail:
+              applicationCount > 0
+                ? `${applicationCount} application${applicationCount === 1 ? "" : "s"} submitted`
+                : "No applications yet",
+          };
+        case "outcomes":
+          return {
+            id,
+            label: "Outcomes",
+            state: stageState(id),
+            detail:
+              outcomeCount > 0
+                ? `${outcomeCount} verified outcome${outcomeCount === 1 ? "" : "s"} recorded`
+                : "No verified outcomes recorded",
+          };
+      }
+    }),
+    nextAction: (() => {
+      if (!hasAssessmentAttempt) {
+        return {
+          label: "Complete your skill assessment",
+          description:
+            "Take your first assessment to create verified skill evidence.",
+          href: "/student/assessments",
+        };
+      }
+      if (skillsCount === 0) {
+        return {
+          label: "Verify your skills with an assessment",
+          description:
+            "Your skill inventory is empty — assessments create verified evidence.",
+          href: "/student/assessments",
+        };
+      }
+      if (!primaryCareerData) {
+        return {
+          label: "Choose your career direction",
+          description:
+            "Select a primary career to unlock tailored requirements and readiness.",
+          href: "/student/careers",
+        };
+      }
+      if (!gapAnalysisPerformed) {
+        return {
+          label: "Analyze your skill gaps",
+          description:
+            "Run a gap analysis to compare your evidence against career requirements.",
+          href: "/student/skill-gap",
+        };
+      }
+      if (roadmapTotal > 0 && roadmapCompleted < roadmapTotal) {
+        return {
+          label: "Continue your career roadmap",
+          description: `${roadmapTotal - roadmapCompleted} roadmap milestone${roadmapTotal - roadmapCompleted === 1 ? "" : "s"} still open.`,
+          href: "/student/roadmap",
+        };
+      }
+      if (priorityGapCount > 0) {
+        return {
+          label: "Build your priority skills",
+          description: topPriorityGapName
+            ? `Priority gap: ${topPriorityGapName}.`
+            : `${priorityGapCount} priority gap${priorityGapCount === 1 ? "" : "s"} identified.`,
+          href: "/student/skill-development",
+        };
+      }
+      if (projectCount === 0) {
+        return {
+          label: "Build your first project",
+          description:
+            "Submit project evidence to strengthen your verified skill profile.",
+          href: "/student/projects",
+        };
+      }
+      if (applicationCount === 0) {
+        return {
+          label: "Explore internships",
+          description:
+            "Browse matched internship opportunities and submit your first application.",
+          href: "/internships",
+        };
+      }
+      if (outcomeCount === 0) {
+        return {
+          label: "Track your outcomes",
+          description:
+            "Outcomes and employer feedback appear here once recorded.",
+          href: "/student/applications",
+        };
+      }
+      return {
+        label: "Review your career progress",
+        description:
+          "All journey stages have real activity — review your gaps and readiness.",
+        href: "/student/skill-gap",
+      };
+    })(),
+  };
+
+  /* Real persisted IndustryDemand for the student's primary career,
+     reusing the existing Phase 6 demand engine (no second algorithm). */
+  let industryDemand: CareerDemandProfile | null = null;
+  if (primaryCareerEntry) {
+    const { getCareerDemandProfile } = await import(
+      "@/lib/industry-demand-core.server"
+    );
+    industryDemand = await getCareerDemandProfile(primaryCareerEntry.career.id);
+  }
+
   const secondaryCareersData = secondaryCareerEntries.map((sc) => ({
     id: sc.career.id,
     title: sc.career.title,
@@ -197,6 +518,9 @@ export const getStudentDashboard = createServerFn({
     })),
 
     applicationCount,
+
+    journey,
+    industryDemand,
   };
 });
 

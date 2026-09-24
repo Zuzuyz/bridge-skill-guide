@@ -6,9 +6,29 @@ import { getAuthenticatedStudentProfile } from "@/server/auth-context";
    GET MY APPLICATIONS
    ========================================================= */
 
+/** Nested Application → Internship → Company contract consumed
+    by ApplicationsPage (mirrors the real Prisma relations). */
+export type MyApplicationRow = {
+  id: string;
+  status: string;
+  appliedAt: string;
+  updatedAt: string;
+  internship: {
+    id: string;
+    role: string;
+    location: string | null;
+    mode: string;
+    stipend: string | null;
+    company: {
+      id: string;
+      name: string;
+    };
+  };
+};
+
 export const getMyApplications = createServerFn({
   method: "GET",
-}).handler(async () => {
+}).handler(async (): Promise<MyApplicationRow[]> => {
   const student = await getAuthenticatedStudentProfile();
 
   if (!student) {
@@ -31,17 +51,30 @@ export const getMyApplications = createServerFn({
     },
   });
 
+  /* Nested contract consumed by ApplicationsPage:
+     Application → Internship → Company. The query above already
+     includes these relations; the previous mapping flattened them
+     (top-level role/company), so the page crashed reading
+     app.internship.role. The shape now mirrors the real
+     relations — no fake data, and the payload contains only this
+     student's own applications (scoped by the authenticated
+     session above). */
   return applications.map((application) => ({
     id: application.id,
-    internshipId: application.internshipId,
-    role: application.internship.role,
-    company: application.internship.company.name,
-    location: application.internship.location,
-    mode: application.internship.mode,
-    stipend: application.internship.stipend,
     status: application.status,
     appliedAt: application.appliedAt.toISOString(),
     updatedAt: application.updatedAt.toISOString(),
+    internship: {
+      id: application.internship.id,
+      role: application.internship.role,
+      location: application.internship.location,
+      mode: application.internship.mode,
+      stipend: application.internship.stipend,
+      company: {
+        id: application.internship.company.id,
+        name: application.internship.company.name,
+      },
+    },
   }));
 });
 

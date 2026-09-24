@@ -57,6 +57,7 @@ const nav = {
   college: [
     ["Overview", "/college/dashboard", LayoutDashboard],
     ["Student analytics", "/college/students", Users],
+    ["Faculty & assignments", "/college/faculty", HandHeart],
   ],
   faculty: [
     ["Dashboard", "/faculty/dashboard", LayoutDashboard],

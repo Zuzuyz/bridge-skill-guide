@@ -36,7 +36,5 @@ export const Route = createFileRoute("/internships/$id")({
 function InternshipDetailsRoute() {
   const params = Route.useParams();
 
-  console.log("Route params:", params);
-
   return <InternshipDetail id={params.id} />;
 }

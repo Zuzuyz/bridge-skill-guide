@@ -34,17 +34,18 @@ import {
    session — a browser-supplied studentId/collegeId/facultyId
    is never trusted. A faculty member is a User with the
    FACULTY role and a 1:1 FacultyProfile (mirrors the
-   Company/College pattern). Their scope is the linked
-   College; without one, or for students whose college
-   does not match, there is NO authorized scope — never a
-   default institution.
+   Company/College pattern). Their scope is DIRECT ASSIGNMENT:
+   only students whose StudentProfile.facultyId equals this
+   FacultyProfile id. Students are assigned exclusively by
+   the student's own College admin (college-admin-server.ts);
+   a faculty member can never assign themselves students and
+   no student is visible merely for sharing a college.
 --------------------------------------------------------- */
 
 type FacultyResolution =
   | { status: "unauthenticated" }
   | { status: "forbidden" }
   | { status: "no-faculty-profile" }
-  | { status: "no-college-link" }
   | {
       status: "ok";
       faculty: {
@@ -55,7 +56,7 @@ type FacultyResolution =
         collegeId: string | null;
         collegeName: string | null;
       };
-      scope: { college: { equals: string; mode: "insensitive" } };
+      scope: { facultyId: string };
     };
 
 async function resolveFacultyForSession(): Promise<FacultyResolution> {
@@ -78,12 +79,9 @@ async function resolveFacultyForSession(): Promise<FacultyResolution> {
     return { status: "no-faculty-profile" };
   }
 
-  if (!facultyProfile.college) {
-    return { status: "no-college-link" };
-  }
-
-  const collegeName = facultyProfile.college.name;
-
+  // Direct-assignment scope: only students explicitly assigned
+  // to this faculty profile. No college-name fallback — a
+  // faculty member with zero assignments sees zero students.
   return {
     status: "ok",
     faculty: {
@@ -92,11 +90,9 @@ async function resolveFacultyForSession(): Promise<FacultyResolution> {
       title: facultyProfile.title,
       department: facultyProfile.department,
       collegeId: facultyProfile.collegeId,
-      collegeName,
+      collegeName: facultyProfile.college?.name ?? null,
     },
-    scope: {
-      college: { equals: collegeName, mode: "insensitive" },
-    },
+    scope: { facultyId: facultyProfile.id },
   };
 }
 
@@ -273,7 +269,7 @@ export const getFacultyStudents = createServerFn({
    ---------------------------------------------------------
    The single funnel every student-detail read and every
    intervention mutation passes through: resolve the student
-   by id ONLY inside the faculty's authorized scope, so a
+   by id ONLY if it is assigned to this faculty, so a
    tampered/unknown id returns not_found and never leaks
    whether an unrelated student exists.
 --------------------------------------------------------- */
@@ -281,8 +277,7 @@ export const getFacultyStudents = createServerFn({
 type FacultyFailure =
   | { status: "unauthenticated" }
   | { status: "forbidden" }
-  | { status: "no-faculty-profile" }
-  | { status: "no-college-link" };
+  | { status: "no-faculty-profile" };
 
 type FacultyResolutionOkFaculty = {
   id: string;
@@ -302,7 +297,7 @@ async function resolveAuthorizedStudent(
   return prisma.studentProfile.findFirst({
     where: {
       id: studentProfileId,
-      college: { equals: faculty.collegeName, mode: "insensitive" },
+      facultyId: faculty.id,
     },
     select: { id: true },
   });

@@ -82,8 +82,6 @@ function FacultyGate({
       "Please log in with a faculty account to access the Faculty Portal.",
     forbidden: "You are not authorized to access the Faculty Portal.",
     "no-faculty-profile": "Faculty access has not been provisioned yet.",
-    "no-college-link":
-      "Faculty access has not been provisioned yet: this account is not linked to a college, so no students are in scope.",
     not_found: "Student not found in your authorized scope.",
     error: "Something went wrong loading faculty data.",
   };
@@ -181,18 +179,24 @@ export function FacultyDashboardPage() {
       {...(faculty.collegeName ? { eyebrow: faculty.collegeName } : {})}
     >
       <p className="mb-6 text-sm text-muted-foreground">
-        Monitoring students of{" "}
-        <span className="font-semibold text-foreground">
-          {faculty.collegeName}
-        </span>
-        . All figures come from real student records in scope.
+        {faculty.collegeName ? (
+          <>
+            Monitoring students of{" "}
+            <span className="font-semibold text-foreground">
+              {faculty.collegeName}
+            </span>
+            . All figures come from real student records in scope.
+          </>
+        ) : (
+          "Monitoring your assigned students. All figures come from real student records in scope."
+        )}
       </p>
 
       {!data.hasAnyStudentData ? (
         <div className="mb-6 rounded-xl border border-amber-400/25 bg-amber-400/10 p-4 text-sm text-amber-200">
           No students are currently assigned to your faculty account. Sections
-          populate automatically as students of {faculty.collegeName} join the
-          platform. No sample data is shown.
+          populate automatically once your college administrator assigns
+          students to you. No sample data is shown.
         </div>
       ) : null}
 

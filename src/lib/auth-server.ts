@@ -1,11 +1,46 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+/**
+ * Client-safe registration options for the UI. Mirrors the
+ * authoritative server-side gate in registerUser: institutional
+ * roles appear ONLY when the explicit hackathon-onboarding
+ * environment flag is set. Never derived from email domains.
+ */
+export const getRegistrationOptions = createServerFn({
+  method: "GET",
+}).handler(async () => {
+  const { isHackathonInstitutionalOnboarding } = await import(
+    "@/server/auth"
+  );
+
+  return {
+    roles: isHackathonInstitutionalOnboarding()
+      ? (["student", "faculty", "company", "college", "admin"] as const)
+      : (["student"] as const),
+  };
+});
+
+/* Registration roles: STUDENT always; institutional roles only
+   when the explicit hackathon-onboarding environment flag is
+   set (validated server-side in registerUser too — the flag is
+   environment configuration, never derived from email domains
+   and never trusted from the browser outside this flow). */
 const authSchema = z.object({
   name: z.string().min(2).max(100).optional(),
   email: z.string().email(),
   password: z.string().min(6),
-  role: z.enum(["student", "company", "college", "admin", "faculty"]),
+  role: z.enum([
+    "student",
+    "faculty",
+    "company",
+    "college",
+    "admin",
+  ]),
+  /* Faculty institutional onboarding: the registrant declares
+     their institution (reused or created as a real College row).
+     Optional — omitted means collegeId stays null. */
+  institution: z.string().min(2).max(120).optional(),
 });
 
 export const register = createServerFn({ method: "POST" })
@@ -26,6 +61,7 @@ export const register = createServerFn({ method: "POST" })
       data.email,
       data.password,
       data.role,
+      data.institution,
     );
 
     const { createSession } = await import(

@@ -8,7 +8,7 @@ import {
   Sparkles,
   UserRound,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
@@ -16,38 +16,17 @@ import { CelestialCosmos } from "@/components/ui/celestial-cosmos";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { login, register } from "@/lib/auth-server";
+import {
+  getRegistrationOptions,
+  login,
+  register,
+} from "@/lib/auth-server";
 
 import type { UserRole } from "@/types";
 
-const roles = [
-  {
-    id: "student",
-    label: "Student",
-    icon: UserRound,
-  },
-  {
-    id: "faculty",
-    label: "Faculty",
-    icon: HandHeart,
-  },
-  {
-    id: "company",
-    label: "Company",
-    icon: Building2,
-  },
-  {
-    id: "college",
-    label: "College",
-    icon: GraduationCap,
-  },
-  {
-    id: "admin",
-    label: "Admin",
-    icon: ShieldCheck,
-  },
-] as const;
-
+/* Dashboard routing is derived exclusively from User.role as
+   stored in the database after authentication — never from the
+   email domain or anything the browser chose. */
 const routeFor = (role: UserRole) =>
   role === "student"
     ? "/student/dashboard"
@@ -59,6 +38,24 @@ const routeFor = (role: UserRole) =>
           ? "/faculty/dashboard"
           : "/admin/dashboard";
 
+const REGISTRATION_ROLE_META: Record<
+  UserRole,
+  { label: string; icon: typeof UserRound }
+> = {
+  student: { label: "Student", icon: UserRound },
+  faculty: { label: "Faculty", icon: HandHeart },
+  company: { label: "Company", icon: Building2 },
+  college: { label: "College", icon: GraduationCap },
+  admin: { label: "Admin", icon: ShieldCheck },
+};
+
+const INSTITUTIONAL_ROLES: UserRole[] = [
+  "faculty",
+  "company",
+  "college",
+  "admin",
+];
+
 export function AuthPage({
   mode,
 }: {
@@ -66,13 +63,37 @@ export function AuthPage({
 }) {
   const navigate = useNavigate();
 
-  const [role, setRole] =
-    useState<UserRole>("student");
+  /* The selectable roles come from the SERVER (which mirrors the
+     authoritative registerUser gate): institutional options render
+     only when hackathon onboarding is enabled in the environment.
+     Production shows Personal/Student only. */
+  const [allowedRoles, setAllowedRoles] = useState<UserRole[]>([
+    "student",
+  ]);
+  const [role, setRole] = useState<UserRole>("student");
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const isRegister = mode === "register";
+
+  useEffect(() => {
+    if (!isRegister) return;
+
+    let mounted = true;
+
+    void getRegistrationOptions()
+      .then((options) => {
+        if (mounted) setAllowedRoles(options.roles as UserRole[]);
+      })
+      .catch(() => {
+        /* Options are cosmetic; the server gate is authoritative. */
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [isRegister]);
 
   const submit = async (
     event: React.FormEvent<HTMLFormElement>,
@@ -92,6 +113,14 @@ export function AuthPage({
     const name = String(
       data.get("name") ?? "",
     ).trim();
+
+    /* Faculty onboarding: the registrant declares their institution,
+       which is linked (or created) as a real College row. Empty for
+       every other role. */
+    const institution =
+      isRegister && role === "faculty"
+        ? String(data.get("institution") ?? "").trim()
+        : "";
 
     if (!email.includes("@")) {
       setError("Enter a valid email address.");
@@ -121,6 +150,9 @@ export function AuthPage({
               email,
               password,
               role,
+              ...(role === "faculty" && institution
+                ? { institution }
+                : {}),
             },
           })
         : await login({
@@ -131,13 +163,11 @@ export function AuthPage({
           });
 
       // Identity is established by the HTTP-only session cookie set
-      // server-side in login/register. No localStorage auth state.
+      // server-side in login/register. The dashboard destination is
+      // derived from User.role as stored in the database — never
+      // from the email domain or anything the client chose.
 
-      const destination =
-        isRegister &&
-        user.role === "student"
-          ? "/student/careers"
-          : routeFor(user.role);
+      const destination = routeFor(user.role);
 
       await navigate({
         to: destination,
@@ -179,12 +209,9 @@ export function AuthPage({
       ===================================================== */}
 
       <header className="relative z-30 mx-auto flex w-full max-w-7xl items-center justify-between px-5 py-6 sm:px-8">
-        <Link
-          to="/"
-          className="flex items-center"
-        >
-          <Brand />
-        </Link>
+        {/* Brand renders its own link to "/" — wrapping it in another
+            <a> produced a nested-anchor hydration warning. */}
+        <Brand />
 
         <Link
           to="/"
@@ -301,51 +328,106 @@ export function AuthPage({
               </div>
 
               {/* =================================================
-                  ROLE SELECTOR
+                  ACCOUNT TYPE (registration — Student only)
               ================================================= */}
 
-              <div className="mt-8">
-                <Label className="mb-3 block text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
-                  I am joining as
-                </Label>
+              {isRegister && (
+                <div className="mt-8">
+                  <Label className="mb-3 block text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                    Account type
+                  </Label>
 
-                <div className="grid grid-cols-2 gap-2">
-                  {roles.map((item) => {
-                    const Icon = item.icon;
-                    const selected =
-                      role === item.id;
-
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() =>
-                          setRole(
-                            item.id as UserRole,
-                          )
-                        }
+                  <div className="space-y-2">
+                    {/* PERSONAL */}
+                    <button
+                      type="button"
+                      onClick={() => setRole("student")}
+                      className={[
+                        "flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all",
+                        role === "student"
+                          ? "border-amber-300/40 bg-amber-300/10 text-amber-200 shadow-lg shadow-amber-950/20"
+                          : "border-white/10 bg-white/[0.03] text-slate-400 hover:border-white/20 hover:bg-white/[0.06] hover:text-white",
+                      ].join(" ")}
+                    >
+                      <UserRound
                         className={[
-                          "flex items-center gap-2 rounded-xl border px-3 py-3 text-xs font-semibold transition-all",
-                          selected
-                            ? "border-amber-300/40 bg-amber-300/10 text-amber-200 shadow-lg shadow-amber-950/20"
-                            : "border-white/10 bg-white/[0.03] text-slate-400 hover:border-white/20 hover:bg-white/[0.06] hover:text-white",
+                          "size-4 shrink-0",
+                          role === "student"
+                            ? "text-amber-300"
+                            : "text-slate-500",
                         ].join(" ")}
-                      >
-                        <Icon
-                          className={[
-                            "size-4",
-                            selected
-                              ? "text-amber-300"
-                              : "text-slate-500",
-                          ].join(" ")}
-                        />
+                      />
+                      <div>
+                        <p className="text-xs font-semibold">Personal</p>
+                        <p className="text-[10px] leading-4 text-slate-500">
+                          Student account for your own skill journey.
+                        </p>
+                      </div>
+                    </button>
 
-                        {item.label}
-                      </button>
-                    );
-                  })}
+                    {/* INSTITUTIONAL — HACKATHON ACCESS (server-gated) */}
+                    {INSTITUTIONAL_ROLES.some((r) =>
+                      allowedRoles.includes(r),
+                    ) ? (
+                      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                        <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                          Institutional — Hackathon Access
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {INSTITUTIONAL_ROLES.filter((r) =>
+                            allowedRoles.includes(r),
+                          ).map((r) => {
+                            const meta = REGISTRATION_ROLE_META[r];
+                            const Icon = meta.icon;
+                            const selected = role === r;
+                            return (
+                              <button
+                                key={r}
+                                type="button"
+                                onClick={() => setRole(r)}
+                                className={[
+                                  "flex items-center gap-2 rounded-lg border px-3 py-2.5 text-xs font-semibold transition-all",
+                                  selected
+                                    ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-200"
+                                    : "border-white/10 bg-white/[0.03] text-slate-400 hover:border-white/20 hover:bg-white/[0.06] hover:text-white",
+                                ].join(" ")}
+                              >
+                                <Icon
+                                  className={[
+                                    "size-4",
+                                    selected
+                                      ? "text-cyan-300"
+                                      : "text-slate-500",
+                                  ].join(" ")}
+                                />
+                                {meta.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="px-1 text-[10px] leading-4 text-slate-500">
+                        Faculty, company, college and admin accounts are
+                        provisioned by the SkillBridge team.
+                      </p>
+                    )}
+
+                    {INSTITUTIONAL_ROLES.some((r) =>
+                      allowedRoles.includes(r),
+                    ) ? (
+                      <p className="px-1 text-[10px] leading-4 text-slate-500">
+                        Use your real email. Hackathon access lets you explore
+                        each SkillBridge portal. Institutional self-registration
+                        is disabled in production.
+                        {role !== "student"
+                          ? " Your dashboard will be ready immediately."
+                          : ""}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* =================================================
                   FORM
@@ -373,6 +455,32 @@ export function AuthPage({
                       className="h-12 rounded-xl border-white/10 bg-white/[0.04] text-white placeholder:text-slate-600 focus-visible:border-amber-400/50 focus-visible:ring-amber-400/10"
                       required
                     />
+                  </div>
+                )}
+
+                {isRegister && role === "faculty" && (
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="institution"
+                      className="text-xs font-medium text-slate-300"
+                    >
+                      Institution / College
+                    </Label>
+
+                    <Input
+                      id="institution"
+                      name="institution"
+                      type="text"
+                      placeholder="Enter your institution's name"
+                      autoComplete="organization"
+                      className="h-12 rounded-xl border-white/10 bg-white/[0.04] text-white placeholder:text-slate-600 focus-visible:border-amber-400/50 focus-visible:ring-amber-400/10"
+                    />
+                    <p className="text-[10px] leading-4 text-slate-500">
+                      Your faculty account is linked to this college. It must
+                      already be registered — if it is not, register the
+                      College account first, then register Faculty using the
+                      same institution name.
+                    </p>
                   </div>
                 )}
 
