@@ -39,6 +39,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
 import { CareerJourneyCard } from "@/components/career-journey";
+import { isEvidenceReadable, EVIDENCE_FALLBACK } from "@/lib/evidence-readability";
 
 import {
   getStudentDashboard,
@@ -197,6 +198,32 @@ function StatusBadge({
     >
       {children}
     </span>
+  );
+}
+
+/* ---------------------------------------------------------
+   Evidence text display guard (defense in depth for issue 3).
+   The server already filters unreadable extraction output, but
+   any legacy corrupted row that reaches a component still gets
+   a clean neutral fallback instead of symbol garbage.
+--------------------------------------------------------- */
+/* The shared detector from evidence-readability.ts — one heuristic
+   for server payloads and UI rendering alike. */
+const isDisplayableEvidence = isEvidenceReadable;
+
+function EvidenceText({
+  evidence,
+  className = "",
+}: {
+  evidence: string | null | undefined;
+  className?: string;
+}) {
+  if (!isDisplayableEvidence(evidence)) return null;
+
+  return (
+    <p className={className}>
+      "{evidence}"
+    </p>
   );
 }
 
@@ -361,7 +388,14 @@ export function StudentDashboard() {
             <p className="mt-3 text-4xl font-serif font-bold text-emerald-300">{verifiedSkills.length}</p>
 
             <p className="mt-3 text-xs text-slate-400">
-              {data.skills.length - verifiedSkills.length} skills awaiting practical assessment
+              {data.skills.length - verifiedSkills.length === 0
+                ? "All skills carry verified evidence"
+                : `${data.skills.length - verifiedSkills.length} resume-detected — not yet verified`}
+            </p>
+
+            <p className="mt-1 text-[10px] leading-4 text-slate-500">
+              Resume detection ≠ verification. Verify via assessments,
+              projects, or your institution.
             </p>
           </Card>
 
@@ -650,31 +684,76 @@ export function StudentDashboard() {
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10">
-                <p className="text-[11px] text-slate-400 font-medium uppercase">Skill Proficiency</p>
-                <p className="mt-1 text-xl font-bold text-white">{data.readinessBreakdown.skillMatch}%</p>
-                <p className="text-[10px] text-slate-400 mt-1">Weight: 40%</p>
+            {/* RESUME_STAGE branch: the weighted formula is not active yet
+                (zero verified skills + zero assessments), so the four
+                components cannot be presented as a weighted sum — the
+                headline IS the bounded resume-stage estimate. */}
+            {data.readinessBreakdown.method === "RESUME_STAGE" ? (
+              <div className="mt-4 rounded-2xl border border-amber-400/25 bg-amber-950/20 p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-400">
+                  Resume-stage estimate
+                </p>
+                <p className="mt-1.5 text-xs leading-5 text-slate-300">
+                  {data.readiness}% reflects resume-detected skill depth
+                  (average proficiency {data.readinessBreakdown.skillMatch}%).
+                  Weighted scoring with verified skills (30%), assessments
+                  (20%), and projects (10%) activates once evidence is
+                  verified — the components below preview your current
+                  standing and do not yet sum to the headline. The estimate
+                  is bounded between 45% and 80%.
+                </p>
+                <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                    <p className="text-[10px] text-slate-400 font-medium uppercase">Skill Proficiency</p>
+                    <p className="mt-0.5 text-base font-bold text-white">{data.readinessBreakdown.skillMatch}%</p>
+                    <p className="text-[9px] text-slate-500 mt-0.5">resume average</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                    <p className="text-[10px] text-slate-400 font-medium uppercase">Verified Ratio</p>
+                    <p className="mt-0.5 text-base font-bold text-emerald-300">{data.readinessBreakdown.verifiedSkills}%</p>
+                    <p className="text-[9px] text-slate-500 mt-0.5">0 verified skills</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                    <p className="text-[10px] text-slate-400 font-medium uppercase">Assessments</p>
+                    <p className="mt-0.5 text-base font-bold text-cyan-300">{data.readinessBreakdown.assessmentScore}%</p>
+                    <p className="text-[9px] text-slate-500 mt-0.5">no attempts yet</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                    <p className="text-[10px] text-slate-400 font-medium uppercase">Project Deliverables</p>
+                    <p className="mt-0.5 text-base font-bold text-pink-300">{data.readinessBreakdown.projectEvidence}%</p>
+                    <p className="text-[9px] text-slate-500 mt-0.5">no verified projects</p>
+                  </div>
+                </div>
               </div>
+            ) : (
+              /* WEIGHTED branch: the formula is active and the four
+                 components reconcile exactly with the headline. */
+              <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10">
+                  <p className="text-[11px] text-slate-400 font-medium uppercase">Skill Proficiency</p>
+                  <p className="mt-1 text-xl font-bold text-white">{data.readinessBreakdown.skillMatch}%</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Weight: 40%</p>
+                </div>
 
-              <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10">
-                <p className="text-[11px] text-slate-400 font-medium uppercase">Verified Ratio</p>
-                <p className="mt-1 text-xl font-bold text-emerald-300">{data.readinessBreakdown.verifiedSkills}%</p>
-                <p className="text-[10px] text-slate-400 mt-1">Weight: 30%</p>
-              </div>
+                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10">
+                  <p className="text-[11px] text-slate-400 font-medium uppercase">Verified Ratio</p>
+                  <p className="mt-1 text-xl font-bold text-emerald-300">{data.readinessBreakdown.verifiedSkills}%</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Weight: 30%</p>
+                </div>
 
-              <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10">
-                <p className="text-[11px] text-slate-400 font-medium uppercase">Assessments</p>
-                <p className="mt-1 text-xl font-bold text-cyan-300">{data.readinessBreakdown.assessmentScore}%</p>
-                <p className="text-[10px] text-slate-400 mt-1">Weight: 20%</p>
-              </div>
+                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10">
+                  <p className="text-[11px] text-slate-400 font-medium uppercase">Assessments</p>
+                  <p className="mt-1 text-xl font-bold text-cyan-300">{data.readinessBreakdown.assessmentScore}%</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Weight: 20%</p>
+                </div>
 
-              <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10">
-                <p className="text-[11px] text-slate-400 font-medium uppercase">Project Deliverables</p>
-                <p className="mt-1 text-xl font-bold text-pink-300">{data.readinessBreakdown.projectEvidence}%</p>
-                <p className="text-[10px] text-slate-400 mt-1">Weight: 10%</p>
+                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10">
+                  <p className="text-[11px] text-slate-400 font-medium uppercase">Project Deliverables</p>
+                  <p className="mt-1 text-xl font-bold text-pink-300">{data.readinessBreakdown.projectEvidence}%</p>
+                  <p className="text-[10px] text-slate-400 mt-1">Weight: 10%</p>
+                </div>
               </div>
-            </div>
+            )}
           </Card>
         )}
 
@@ -703,7 +782,7 @@ export function StudentDashboard() {
                     <ProgressBar value={skill.score} />
                   </div>
 
-                  {skill.evidence && (
+                  {isDisplayableEvidence(skill.evidence) && (
                     <p className="mt-3 text-[11px] text-slate-300/80 bg-black/25 p-2.5 rounded-xl line-clamp-2 border border-white/5">
                       "{skill.evidence}"
                     </p>
@@ -1098,7 +1177,7 @@ export function SkillsPage() {
                 <ProgressBar value={skill.score} />
               </div>
 
-              {skill.evidence && (
+              {isDisplayableEvidence(skill.evidence) && (
                 <div className="mt-3 p-2.5 rounded-xl bg-black/30 border border-white/5 text-[11px] text-slate-300/80 line-clamp-2">
                   <span className="font-semibold text-amber-300/90">Evidence: </span>
                   "{skill.evidence}"
@@ -1202,7 +1281,7 @@ function SkillDetailModal({ skill, onClose }: { skill: Skill; onClose: () => voi
               <span className="text-[10px] font-mono text-emerald-400">✓ Detected</span>
             </div>
             <p className="mt-2 text-xs text-slate-300 bg-black/30 p-2.5 rounded-xl border border-white/5">
-              "{skill.evidence || `Extracted from technical experience in resume.`}"
+              "{isDisplayableEvidence(skill.evidence) ? skill.evidence : EVIDENCE_FALLBACK}"
             </p>
           </div>
 
@@ -1521,7 +1600,7 @@ export function ResumePage() {
                       <ProgressBar value={skill.score} />
                     </div>
 
-                    {skill.evidence && (
+                    {isDisplayableEvidence(skill.evidence) && (
                       <p className="mt-2 text-[11px] text-slate-300/80 bg-black/20 p-2 rounded-lg line-clamp-2">
                         "{skill.evidence}"
                       </p>
@@ -2619,9 +2698,16 @@ export function SkillPassportPage() {
           {/* Transparent Readiness Breakdown */}
           {passport.readinessBreakdown && (
             <div className="mt-6 pt-5 border-t border-white/10">
-              <p className="text-xs font-semibold text-slate-300 mb-3">
-                Score Formula: <span className="font-mono text-slate-400 text-[11px]">{passport.readinessBreakdown.formula}</span>
-              </p>
+              {passport.readinessBreakdown.method === "RESUME_STAGE" ? (
+                <p className="text-xs font-semibold text-slate-300 mb-3">
+                  Resume-stage estimate (bounded 45–80%): weighted scoring
+                  activates once skills are verified.
+                </p>
+              ) : (
+                <p className="text-xs font-semibold text-slate-300 mb-3">
+                  Score Formula: <span className="font-mono text-slate-400 text-[11px]">{passport.readinessBreakdown.formula}</span>
+                </p>
+              )}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="rounded-xl bg-black/30 border border-white/5 p-2.5 text-center">
                   <p className="text-[10px] uppercase text-slate-400">Skill Proficiency</p>
@@ -2808,7 +2894,7 @@ export function SkillPassportPage() {
                   <ProgressBar value={skill.score} />
                 </div>
 
-                {skill.evidence && (
+                {isDisplayableEvidence(skill.evidence) && (
                   <p className="mt-3 text-[11px] text-slate-300/80 bg-black/20 p-2.5 rounded-xl border border-white/5 line-clamp-2">
                     "{skill.evidence}"
                   </p>

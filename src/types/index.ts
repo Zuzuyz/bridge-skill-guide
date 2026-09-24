@@ -148,6 +148,14 @@ export interface Project {
 
 export interface ReadinessBreakdown {
   overall: number;
+  /* Which authoritative branch produced `overall`:
+     - WEIGHTED: the 40/30/20/10 formula (active once verified
+       evidence exists)
+     - RESUME_STAGE: bounded resume-stage estimate
+       min(80, max(45, skillMatch × 0.85)) used when the student
+       has zero verified skills and zero assessments — the weights
+       do not apply yet, so the UI must not present them as such. */
+  method: "WEIGHTED" | "RESUME_STAGE";
   skillMatch: number;
   verifiedSkills: number;
   projectEvidence: number;

@@ -38,23 +38,68 @@ const routeFor = (role: UserRole) =>
           ? "/faculty/dashboard"
           : "/admin/dashboard";
 
-const REGISTRATION_ROLE_META: Record<
+const ROLE_META: Record<
   UserRole,
-  { label: string; icon: typeof UserRound }
+  { label: string; description: string; icon: typeof UserRound }
 > = {
-  student: { label: "Student", icon: UserRound },
-  faculty: { label: "Faculty", icon: HandHeart },
-  company: { label: "Company", icon: Building2 },
-  college: { label: "College", icon: GraduationCap },
-  admin: { label: "Admin", icon: ShieldCheck },
+  student: {
+    label: "Personal",
+    description: "Student account",
+    icon: UserRound,
+  },
+  faculty: {
+    label: "Faculty",
+    description: "Student development & mentoring",
+    icon: HandHeart,
+  },
+  company: {
+    label: "Company",
+    description: "Internships & hiring",
+    icon: Building2,
+  },
+  college: {
+    label: "College",
+    description: "Student & faculty management",
+    icon: GraduationCap,
+  },
+  admin: {
+    label: "Admin",
+    description: "Platform administration",
+    icon: ShieldCheck,
+  },
 };
 
-const INSTITUTIONAL_ROLES: UserRole[] = [
+/* The account-type selector ALWAYS shows all five roles on both
+   login and registration. selectedRole is a UI hint only: the
+   server verifies email/password, compares it with the authenticated
+   User.role, and rejects a mismatch. It can never grant permissions.
+   Registration policy (hackathon flag) is enforced server-side and
+   reflected here only as an explanatory message. */
+const ALL_ROLES: UserRole[] = [
+  "student",
   "faculty",
   "company",
   "college",
   "admin",
 ];
+
+/* Connected celestial journey path — mirrors the student portal's
+   real stage pipeline. Decorative (brand panel), never functional. */
+const JOURNEY_STAGES = [
+  { label: "Skills", color: "amber" },
+  { label: "Skill Gap", color: "pink" },
+  { label: "Career Roadmap", color: "purple" },
+  { label: "Projects", color: "cyan" },
+  { label: "Internships", color: "amber" },
+  { label: "Outcomes", color: "pink" },
+] as const;
+
+const JOURNEY_NODE_CLASSES: Record<string, string> = {
+  amber: "border-amber-400/30 bg-amber-400/10 text-amber-200",
+  pink: "border-pink-400/30 bg-pink-400/10 text-pink-200",
+  purple: "border-purple-400/30 bg-purple-400/10 text-purple-200",
+  cyan: "border-cyan-400/30 bg-cyan-400/10 text-cyan-200",
+};
 
 export function AuthPage({
   mode,
@@ -63,13 +108,11 @@ export function AuthPage({
 }) {
   const navigate = useNavigate();
 
-  /* The selectable roles come from the SERVER (which mirrors the
-     authoritative registerUser gate): institutional options render
-     only when hackathon onboarding is enabled in the environment.
-     Production shows Personal/Student only. */
-  const [allowedRoles, setAllowedRoles] = useState<UserRole[]>([
-    "student",
-  ]);
+  /* Whether hackathon institutional onboarding is enabled — fetched
+     from the server (mirrors the authoritative registerUser gate).
+     Only affects REGISTRATION messaging; the account-type selector
+     always shows all five roles on both login and registration. */
+  const [hackathonMode, setHackathonMode] = useState(false);
   const [role, setRole] = useState<UserRole>("student");
 
   const [error, setError] = useState("");
@@ -84,10 +127,12 @@ export function AuthPage({
 
     void getRegistrationOptions()
       .then((options) => {
-        if (mounted) setAllowedRoles(options.roles as UserRole[]);
+        if (mounted) {
+          setHackathonMode(options.roles.some((r) => r !== "student"));
+        }
       })
       .catch(() => {
-        /* Options are cosmetic; the server gate is authoritative. */
+        /* Messaging only; the server gate is authoritative. */
       });
 
     return () => {
@@ -115,12 +160,16 @@ export function AuthPage({
     ).trim();
 
     /* Faculty onboarding: the registrant declares their institution,
-       which is linked (or created) as a real College row. Empty for
-       every other role. */
+       which is linked (never created here) as a real College row.
+       Empty for every other role. */
     const institution =
       isRegister && role === "faculty"
         ? String(data.get("institution") ?? "").trim()
         : "";
+
+    const confirmPassword = isRegister
+      ? String(data.get("confirmPassword") ?? "")
+      : "";
 
     if (!email.includes("@")) {
       setError("Enter a valid email address.");
@@ -136,6 +185,11 @@ export function AuthPage({
 
     if (isRegister && name.length < 2) {
       setError("Enter your full name.");
+      return;
+    }
+
+    if (isRegister && password !== confirmPassword) {
+      setError("Passwords do not match.");
       return;
     }
 
@@ -159,6 +213,10 @@ export function AuthPage({
             data: {
               email,
               password,
+              /* UI convenience only: compared server-side against
+                 the authenticated User.role. A mismatch is rejected;
+                 it can never grant a role or a different dashboard. */
+              selectedRole: role,
             },
           });
 
@@ -190,8 +248,70 @@ export function AuthPage({
     }
   };
 
+  const roleGrid = (
+    <div className="space-y-2">
+      {ALL_ROLES.map((r) => {
+        const meta = ROLE_META[r];
+        const Icon = meta.icon;
+        const selected = role === r;
+        const isStudent = r === "student";
+        return (
+          <button
+            key={r}
+            type="button"
+            onClick={() => setRole(r)}
+            aria-pressed={selected}
+            className={[
+              "flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all",
+              selected
+                ? isStudent
+                  ? "border-amber-300/40 bg-amber-300/10 text-amber-200 shadow-lg shadow-amber-950/20"
+                  : "border-cyan-300/40 bg-cyan-300/10 text-cyan-200 shadow-lg shadow-cyan-950/20"
+                : "border-white/10 bg-white/[0.03] text-slate-400 hover:border-white/20 hover:bg-white/[0.06] hover:text-white",
+            ].join(" ")}
+          >
+            <Icon
+              className={[
+                "size-4 shrink-0",
+                selected
+                  ? isStudent
+                    ? "text-amber-300"
+                    : "text-cyan-300"
+                  : "text-slate-500",
+              ].join(" ")}
+            />
+            <div>
+              <p className="text-xs font-semibold">{meta.label}</p>
+              <p className="text-[10px] leading-4 text-slate-500">
+                {meta.description}
+              </p>
+            </div>
+          </button>
+        );
+      })}
+
+      {/* Registration policy messaging — presentation only. The
+          registerUser server gate remains authoritative. */}
+      {isRegister && hackathonMode ? (
+        <p className="px-1 text-[10px] leading-4 text-slate-500">
+          Use your real email. Hackathon access lets you explore each
+          SkillBridge portal. Institutional self-registration is
+          disabled in production.
+          {role !== "student"
+            ? " Your dashboard will be ready immediately."
+            : ""}
+        </p>
+      ) : isRegister && role !== "student" ? (
+        <p className="px-1 text-[10px] leading-4 text-slate-500">
+          Faculty, company, college and admin accounts are provisioned
+          by the SkillBridge team.
+        </p>
+      ) : null}
+    </div>
+  );
+
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#05040a] text-white">
+    <main className="relative min-h-screen overflow-hidden bg-[#050816] text-white">
       {/* =====================================================
           COSMIC BACKGROUND
       ===================================================== */}
@@ -202,7 +322,7 @@ export function AuthPage({
         showRings={true}
       />
 
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(139,92,246,0.18),transparent_32%),radial-gradient(circle_at_80%_70%,rgba(236,72,153,0.14),transparent_30%),linear-gradient(180deg,rgba(5,4,10,0.2),rgba(5,4,10,0.82))]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(140,92,255,0.16),transparent_32%),radial-gradient(circle_at_80%_70%,rgba(232,61,232,0.12),transparent_30%),radial-gradient(circle_at_50%_50%,rgba(0,217,245,0.05),transparent_45%),linear-gradient(180deg,rgba(5,8,22,0.2),rgba(5,8,22,0.82))]" />
 
       {/* =====================================================
           TOP NAV
@@ -226,13 +346,13 @@ export function AuthPage({
       ===================================================== */}
 
       <section className="relative z-20 mx-auto flex min-h-[calc(100vh-100px)] w-full max-w-6xl items-center justify-center px-4 pb-10 sm:px-6 lg:px-8">
-        <div className="grid w-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#090714]/85 shadow-2xl shadow-black/60 backdrop-blur-2xl lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="grid w-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#06112B]/85 shadow-2xl shadow-black/60 backdrop-blur-2xl lg:grid-cols-[0.9fr_1.1fr]">
 
-          {/* =================================================
+          {/* ================================================
               LEFT CELESTIAL PANEL
-          ================================================= */}
+          ================================================ */}
 
-          <div className="relative hidden min-h-[680px] overflow-hidden border-r border-white/10 bg-[#07050e] p-10 lg:flex lg:flex-col lg:justify-between">
+          <div className="relative hidden min-h-[680px] overflow-hidden border-r border-white/10 bg-[#050816] p-10 lg:flex lg:flex-col lg:justify-between">
             <CelestialCosmos
               className="opacity-90"
               particleCount={120}
@@ -255,48 +375,47 @@ export function AuthPage({
               </h1>
 
               <p className="mt-7 max-w-md text-sm leading-7 text-slate-400">
-                SkillBridge connects your academic
-                journey with the skills, careers,
-                mentors, and opportunities shaping
-                the world of work.
+                SkillBridge connects your academic learning with the
+                skills, careers, mentors, internships, projects, and
+                industry opportunities shaping your future.
               </p>
             </div>
 
-            {/* Journey */}
+            {/* Journey — connected celestial path */}
             <div className="relative z-10 rounded-2xl border border-white/10 bg-black/20 p-5 backdrop-blur-xl">
               <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-500">
                 Your journey
               </p>
 
-              <div className="mt-4 flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-200">
-                  Skills
-                </span>
-
-                <ArrowRight className="size-3 text-slate-600" />
-
-                <span className="rounded-full border border-pink-400/20 bg-pink-400/10 px-3 py-1.5 text-xs font-semibold text-pink-200">
-                  Skill Gap
-                </span>
-
-                <ArrowRight className="size-3 text-slate-600" />
-
-                <span className="rounded-full border border-purple-400/20 bg-purple-400/10 px-3 py-1.5 text-xs font-semibold text-purple-200">
-                  Roadmap
-                </span>
-
-                <ArrowRight className="size-3 text-slate-600" />
-
-                <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-200">
-                  Internships
-                </span>
+              <div className="mt-4 flex flex-wrap items-center gap-x-1.5 gap-y-2">
+                {JOURNEY_STAGES.map((stage, index) => (
+                  <div
+                    key={stage.label}
+                    className="flex items-center gap-1.5"
+                  >
+                    {index > 0 && (
+                      <span
+                        aria-hidden
+                        className="h-px w-3 bg-gradient-to-r from-white/5 via-amber-300/30 to-white/5"
+                      />
+                    )}
+                    <span
+                      className={[
+                        "rounded-full border px-3 py-1.5 text-xs font-semibold",
+                        JOURNEY_NODE_CLASSES[stage.color],
+                      ].join(" ")}
+                    >
+                      {stage.label}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
 
-          {/* =================================================
+          {/* ================================================
               RIGHT FORM
-          ================================================= */}
+          ================================================ */}
 
           <div className="flex items-center p-6 sm:p-10 lg:p-14">
             <div className="mx-auto w-full max-w-md">
@@ -311,7 +430,7 @@ export function AuthPage({
                 <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-300">
                   {isRegister
                     ? "Begin your journey"
-                    : "Welcome back"}
+                    : "Continue your journey"}
                 </p>
 
                 <h2 className="mt-3 font-serif text-4xl font-medium tracking-tight text-white">
@@ -322,116 +441,26 @@ export function AuthPage({
 
                 <p className="mt-3 text-sm leading-6 text-slate-400">
                   {isRegister
-                    ? "Join SkillBridge and connect your skills with real career opportunities."
-                    : "Sign in to continue your SkillBridge journey."}
+                    ? "Start building your career journey with SkillBridge."
+                    : "Continue where you left off."}
                 </p>
               </div>
 
-              {/* =================================================
-                  ACCOUNT TYPE (registration — Student only)
-              ================================================= */}
+              {/* ==============================================
+                  ACCOUNT TYPE (login + registration)
+              ============================================== */}
 
-              {isRegister && (
-                <div className="mt-8">
-                  <Label className="mb-3 block text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
-                    Account type
-                  </Label>
+              <div className="mt-8">
+                <Label className="mb-3 block text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+                  Account type
+                </Label>
 
-                  <div className="space-y-2">
-                    {/* PERSONAL */}
-                    <button
-                      type="button"
-                      onClick={() => setRole("student")}
-                      className={[
-                        "flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all",
-                        role === "student"
-                          ? "border-amber-300/40 bg-amber-300/10 text-amber-200 shadow-lg shadow-amber-950/20"
-                          : "border-white/10 bg-white/[0.03] text-slate-400 hover:border-white/20 hover:bg-white/[0.06] hover:text-white",
-                      ].join(" ")}
-                    >
-                      <UserRound
-                        className={[
-                          "size-4 shrink-0",
-                          role === "student"
-                            ? "text-amber-300"
-                            : "text-slate-500",
-                        ].join(" ")}
-                      />
-                      <div>
-                        <p className="text-xs font-semibold">Personal</p>
-                        <p className="text-[10px] leading-4 text-slate-500">
-                          Student account for your own skill journey.
-                        </p>
-                      </div>
-                    </button>
+                {roleGrid}
+              </div>
 
-                    {/* INSTITUTIONAL — HACKATHON ACCESS (server-gated) */}
-                    {INSTITUTIONAL_ROLES.some((r) =>
-                      allowedRoles.includes(r),
-                    ) ? (
-                      <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                        <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
-                          Institutional — Hackathon Access
-                        </p>
-                        <div className="grid grid-cols-2 gap-2">
-                          {INSTITUTIONAL_ROLES.filter((r) =>
-                            allowedRoles.includes(r),
-                          ).map((r) => {
-                            const meta = REGISTRATION_ROLE_META[r];
-                            const Icon = meta.icon;
-                            const selected = role === r;
-                            return (
-                              <button
-                                key={r}
-                                type="button"
-                                onClick={() => setRole(r)}
-                                className={[
-                                  "flex items-center gap-2 rounded-lg border px-3 py-2.5 text-xs font-semibold transition-all",
-                                  selected
-                                    ? "border-cyan-300/40 bg-cyan-300/10 text-cyan-200"
-                                    : "border-white/10 bg-white/[0.03] text-slate-400 hover:border-white/20 hover:bg-white/[0.06] hover:text-white",
-                                ].join(" ")}
-                              >
-                                <Icon
-                                  className={[
-                                    "size-4",
-                                    selected
-                                      ? "text-cyan-300"
-                                      : "text-slate-500",
-                                  ].join(" ")}
-                                />
-                                {meta.label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="px-1 text-[10px] leading-4 text-slate-500">
-                        Faculty, company, college and admin accounts are
-                        provisioned by the SkillBridge team.
-                      </p>
-                    )}
-
-                    {INSTITUTIONAL_ROLES.some((r) =>
-                      allowedRoles.includes(r),
-                    ) ? (
-                      <p className="px-1 text-[10px] leading-4 text-slate-500">
-                        Use your real email. Hackathon access lets you explore
-                        each SkillBridge portal. Institutional self-registration
-                        is disabled in production.
-                        {role !== "student"
-                          ? " Your dashboard will be ready immediately."
-                          : ""}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-              )}
-
-              {/* =================================================
+              {/* ==============================================
                   FORM
-              ================================================= */}
+              ============================================== */}
 
               <form
                 onSubmit={submit}
@@ -476,10 +505,10 @@ export function AuthPage({
                       className="h-12 rounded-xl border-white/10 bg-white/[0.04] text-white placeholder:text-slate-600 focus-visible:border-amber-400/50 focus-visible:ring-amber-400/10"
                     />
                     <p className="text-[10px] leading-4 text-slate-500">
-                      Your faculty account is linked to this college. It must
-                      already be registered — if it is not, register the
-                      College account first, then register Faculty using the
-                      same institution name.
+                      Your faculty account is linked to this college. It
+                      must already be registered — if it is not, register
+                      the College account first, then register Faculty
+                      using the same institution name.
                     </p>
                   </div>
                 )}
@@ -534,8 +563,32 @@ export function AuthPage({
                   />
                 </div>
 
+                {isRegister && (
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="confirmPassword"
+                      className="text-xs font-medium text-slate-300"
+                    >
+                      Confirm password
+                    </Label>
+
+                    <Input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type="password"
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      className="h-12 rounded-xl border-white/10 bg-white/[0.04] text-white placeholder:text-slate-600 focus-visible:border-amber-400/50 focus-visible:ring-amber-400/10"
+                      required
+                    />
+                  </div>
+                )}
+
                 {error && (
-                  <div className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-xs leading-5 text-rose-300">
+                  <div
+                    role="alert"
+                    className="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-xs leading-5 text-rose-300"
+                  >
                     {error}
                   </div>
                 )}
@@ -559,9 +612,9 @@ export function AuthPage({
                 </Button>
               </form>
 
-              {/* =================================================
+              {/* ==============================================
                   SWITCH AUTH MODE
-              ================================================= */}
+              ============================================== */}
 
               <div className="mt-7 text-center text-xs text-slate-500">
                 {isRegister ? (
@@ -581,7 +634,7 @@ export function AuthPage({
                       to="/register"
                       className="font-semibold text-amber-300 transition hover:text-amber-200 hover:underline"
                     >
-                      Create one
+                      Create account
                     </Link>
                   </>
                 )}

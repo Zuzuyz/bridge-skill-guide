@@ -96,6 +96,14 @@ export const login = createServerFn({ method: "POST" })
     z.object({
       email: z.string().email(),
       password: z.string().min(6),
+      /* UI convenience ONLY: the account type chosen on the login
+         form. It can only cause a REJECTION when it disagrees with
+         the authenticated database User.role — it can never grant a
+         role, a permission, or a different dashboard. Authorization
+         continues to derive exclusively from User.role in PostgreSQL. */
+      selectedRole: z
+        .enum(["student", "faculty", "company", "college", "admin"])
+        .optional(),
     }),
   )
   .handler(async ({ data }) => {
@@ -107,6 +115,18 @@ export const login = createServerFn({ method: "POST" })
       data.email,
       data.password,
     );
+
+    /* The database role is the source of truth. A selected account
+       type that disagrees with it is rejected BEFORE any session is
+       created — the hint can only narrow access, never widen it. */
+    if (data.selectedRole && data.selectedRole !== user.role) {
+      const actualRoleLabel =
+        user.role.charAt(0).toUpperCase() + user.role.slice(1);
+
+      throw new Error(
+        `This account is registered as ${actualRoleLabel}. Select "${actualRoleLabel}" as the account type and try again.`,
+      );
+    }
 
     const { createSession } = await import(
       "@/server/session"

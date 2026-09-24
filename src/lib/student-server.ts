@@ -56,6 +56,14 @@ export type CareerJourney = {
   nextAction: CareerJourneyAction;
 };
 
+/* ------------------------------------------------------------
+   Evidence readability uses the single shared detector in
+   evidence-readability.ts — one heuristic for server payloads
+   and UI alike. Persisted StudentSkill evidence is never
+   modified here; unreadable evidence is just not sent to the UI.
+------------------------------------------------------------ */
+import { isEvidenceReadable } from "@/lib/evidence-readability";
+
 export const getStudentDashboard = createServerFn({
   method: "GET",
 }).handler(async () => {
@@ -134,7 +142,7 @@ export const getStudentDashboard = createServerFn({
       name: item.skill.name,
       score: item.score,
       confidence: item.confidence ?? 88,
-      evidence: item.evidence ?? undefined,
+      evidence: isEvidenceReadable(item.evidence) ? item.evidence : undefined,
       evidenceSource: item.evidenceSource ?? "Resume",
       verificationLevel: rawLevel,
       verificationLabel: label,
@@ -580,7 +588,7 @@ export const getSkillPassportData = createServerFn({
       name: item.skill.name,
       score: item.score,
       confidence: item.confidence ?? 88,
-      evidence: item.evidence ?? undefined,
+      evidence: isEvidenceReadable(item.evidence) ? item.evidence : undefined,
       evidenceSource: item.evidenceSource ?? "Resume",
       verificationLevel: rawLevel,
       verificationLabel: label,

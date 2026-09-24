@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { prisma } from "@/server/db.server";
 import { getAuthenticatedStudentProfile } from "@/server/auth-context";
+import { isEvidenceReadable, EVIDENCE_FALLBACK } from "@/lib/evidence-readability";
 import { extractSkillsFromResume } from "@/server/gemini";
 import {
   extractSkillsLocally,
@@ -380,7 +381,12 @@ export const analyzeResume = createServerFn({
         name: s.name,
         score: s.score,
         confidence: s.confidence,
-        evidence: s.evidence,
+        /* Unreadable extraction output is never returned to the UI —
+           a clean neutral sentence takes its place. The extracted
+           skill itself (name/score/confidence) is untouched. */
+        evidence: isEvidenceReadable(s.evidence)
+          ? s.evidence
+          : EVIDENCE_FALLBACK,
         category: s.category,
         verificationLevel: "RESUME_DETECTED" as const,
         verificationLabel: "Resume Detected",

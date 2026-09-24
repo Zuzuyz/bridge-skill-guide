@@ -21,6 +21,7 @@ export async function calculateStudentReadiness(studentId: string): Promise<{
       readiness: 0,
       breakdown: {
         overall: 0,
+        method: "WEIGHTED",
         skillMatch: 0,
         verifiedSkills: 0,
         projectEvidence: 0,
@@ -61,7 +62,9 @@ export async function calculateStudentReadiness(studentId: string): Promise<{
   // 5. Final Authoritative Readiness
   // If assessments or verified skills exist, aggregate all components with weights
   let overall = 0;
+  let method: "WEIGHTED" | "RESUME_STAGE";
   if (assessmentAvg > 0 || verifiedSkillsRatio > 0) {
+    method = "WEIGHTED";
     overall = Math.round(
       skillMatch * 0.40 +
       verifiedSkillsRatio * 0.30 +
@@ -69,7 +72,9 @@ export async function calculateStudentReadiness(studentId: string): Promise<{
       projectEvidenceScore * 0.10
     );
   } else {
-    // Pure resume stage: bounded between 40% and 80% based on resume skill depth
+    // Pure resume stage: bounded between 45% and 80% based on resume skill depth.
+    // The weighted formula is NOT active yet — the breakdown must say so.
+    method = "RESUME_STAGE";
     overall = Math.min(80, Math.max(45, Math.round(skillMatch * 0.85)));
   }
 
@@ -81,6 +86,7 @@ export async function calculateStudentReadiness(studentId: string): Promise<{
     readiness: overall,
     breakdown: {
       overall,
+      method,
       skillMatch,
       verifiedSkills: verifiedSkillsRatio,
       projectEvidence: projectEvidenceScore,
