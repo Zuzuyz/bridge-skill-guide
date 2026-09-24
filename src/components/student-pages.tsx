@@ -38,6 +38,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 
 import { AppShell } from "@/components/app-shell";
+import { CareerJourneyCard } from "@/components/career-journey";
 
 import {
   getStudentDashboard,
@@ -318,6 +319,9 @@ export function StudentDashboard() {
           </div>
         </div>
 
+        {/* Career Journey — real persisted-state orchestration layer */}
+        <CareerJourneyCard journey={data.journey} />
+
         {/* 4 Key Stat Cards */}
         <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
           <Card>
@@ -488,47 +492,81 @@ export function StudentDashboard() {
           </div>
         </Card>
 
-        {/* Industry Demand Data Foundation Card (Phase 6A) */}
-        <Card className="border-rose-500/20 bg-gradient-to-r from-rose-950/20 via-[#0c0919] to-amber-950/20">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-rose-400" />
-                <h2 className="text-lg font-bold text-white">Industry Skill Demand Foundation</h2>
-                <span className="rounded-full bg-rose-400/10 px-2.5 py-0.5 text-[10px] font-mono font-bold text-rose-300 border border-rose-400/20">
-                  DEMO DATASET
-                </span>
+        {/* Industry Demand Card (Phase 6A) — real persisted IndustryDemand
+            records for the student's primary career via the existing demand
+            engine. Honest empty state when no demand data exists. */}
+        {data.industryDemand ? (
+          <Card className="border-rose-500/20 bg-gradient-to-r from-rose-950/20 via-[#0c0919] to-amber-950/20">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-rose-400" />
+                  <h2 className="text-lg font-bold text-white">Industry Skill Demand</h2>
+                  <span className="rounded-full bg-rose-400/10 px-2.5 py-0.5 text-[10px] font-mono font-bold text-rose-300 border border-rose-400/20">
+                    {data.industryDemand.sourceDisclaimer.isDemo ? "BENCHMARK DATASET" : "VERIFIED SOURCES"}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-slate-300">
+                  Persisted demand records for your primary career ({data.industryDemand.career.title}).
+                </p>
               </div>
-              <p className="mt-1 text-xs text-slate-300">
-                Industry-demand index ratings for your target career direction ({data.careerDirection?.primary?.title ?? "your career"}).
-              </p>
+
+              <Link
+                to="/student/industry-demand"
+                className="inline-flex items-center gap-2 self-start md:self-auto rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-bold text-rose-300 hover:bg-rose-500/20 transition"
+              >
+                <span>Explore Industry Demand</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
             </div>
 
-            <Link
-              to="/student/industry-demand"
-              className="inline-flex items-center gap-2 self-start md:self-auto rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-bold text-rose-300 hover:bg-rose-500/20 transition"
-            >
-              <span>Explore Industry Demand</span>
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-slate-400">Demand benchmarks:</span>
+              {data.industryDemand.skills
+                .filter((s) => s.demandLevel !== null)
+                .slice(0, 6)
+                .map((s) => (
+                  <span
+                    key={s.demandId}
+                    className={
+                      s.demandLevel === "HIGH"
+                        ? "rounded-lg bg-rose-500/20 border border-rose-500/30 px-2.5 py-1 font-semibold text-rose-300"
+                        : s.demandLevel === "GROWING"
+                          ? "rounded-lg bg-amber-500/20 border border-amber-500/30 px-2.5 py-1 font-semibold text-amber-300"
+                          : "rounded-lg bg-purple-500/20 border border-purple-500/30 px-2.5 py-1 font-semibold text-purple-300"
+                    }
+                  >
+                    {s.skillName}
+                    {s.demandScore !== null ? ` (Index: ${s.demandScore})` : ""}
+                  </span>
+                ))}
+            </div>
+          </Card>
+        ) : (
+          <Card className="border-white/10 bg-[#0c0919]/85">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-slate-500" />
+                  <h2 className="text-lg font-bold text-white">Industry Skill Demand</h2>
+                </div>
+                <p className="mt-1 text-xs text-slate-400">
+                  {data.careerDirection?.primary
+                    ? "No industry-demand records exist yet for your primary career."
+                    : "Choose a primary career to see industry demand for its skills."}
+                </p>
+              </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-            <span className="text-slate-400">High-Demand Skill Benchmarks:</span>
-            <span className="rounded-lg bg-rose-500/20 border border-rose-500/30 px-2.5 py-1 font-semibold text-rose-300">
-              Python (Index: 95)
-            </span>
-            <span className="rounded-lg bg-rose-500/20 border border-rose-500/30 px-2.5 py-1 font-semibold text-rose-300">
-              Machine Learning (Index: 94)
-            </span>
-            <span className="rounded-lg bg-amber-500/20 border border-amber-500/30 px-2.5 py-1 font-semibold text-amber-300">
-              SQL (Index: 78)
-            </span>
-            <span className="rounded-lg bg-amber-500/20 border border-amber-500/30 px-2.5 py-1 font-semibold text-amber-300">
-              Docker (Index: 81)
-            </span>
-          </div>
-        </Card>
+              <Link
+                to="/student/industry-demand"
+                className="inline-flex items-center gap-2 self-start md:self-auto rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs font-bold text-slate-300 hover:bg-white/10 transition"
+              >
+                <span>Explore Industry Demand</span>
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </Card>
+        )}
 
         {/* Career Readiness Card (Phase 7A) */}
         <Card className="border-purple-500/20 bg-gradient-to-r from-purple-950/20 via-[#0c0919] to-indigo-950/20">
@@ -2199,7 +2237,9 @@ export function RoadmapPage() {
 ========================================================= */
 
 export function ApplicationsPage() {
-  const [applications, setApplications] = useState<any[]>([]);
+  const [applications, setApplications] = useState<
+    Awaited<ReturnType<typeof getMyApplications>>
+  >([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
