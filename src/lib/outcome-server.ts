@@ -364,6 +364,21 @@ export const createOutcome = createServerFn({ method: "POST" })
         );
       }
 
+      // Outcome.studentId / EmployerFeedback.studentId reference
+      // StudentProfile, while Application.studentId references User.
+      // Resolve the real StudentProfile id from the application's
+      // User id — never copy the User id into the profile-keyed FK.
+      const applicantProfile = await prisma.studentProfile.findUnique({
+        where: { userId: application.studentId },
+        select: { id: true },
+      });
+
+      if (!applicantProfile) {
+        throw new Error(
+          "The applicant does not have a student profile.",
+        );
+      }
+
       // Lifecycle guard: the outcome type must be permitted by the
       // application's CURRENT status (no NOT_SELECTED → HIRED, no
       // outcomes for students who never participated, etc.).
@@ -393,7 +408,7 @@ export const createOutcome = createServerFn({ method: "POST" })
 
       const outcome = await prisma.outcome.create({
         data: {
-          studentId: application.studentId,
+          studentId: applicantProfile.id,
           companyId: company.id,
           internshipId: application.internshipId,
           applicationId: application.id,
@@ -467,6 +482,21 @@ export const createEmployerFeedback = createServerFn({ method: "POST" })
         );
       }
 
+      // Outcome.studentId / EmployerFeedback.studentId reference
+      // StudentProfile, while Application.studentId references User.
+      // Resolve the real StudentProfile id from the application's
+      // User id — never copy the User id into the profile-keyed FK.
+      const applicantProfile = await prisma.studentProfile.findUnique({
+        where: { userId: application.studentId },
+        select: { id: true },
+      });
+
+      if (!applicantProfile) {
+        throw new Error(
+          "The applicant does not have a student profile.",
+        );
+      }
+
       const hasAnyRating =
         data.technicalSkillsRating != null ||
         data.communicationRating != null ||
@@ -495,7 +525,7 @@ export const createEmployerFeedback = createServerFn({ method: "POST" })
       const feedback = await prisma.employerFeedback.create({
         data: {
           companyId: company.id,
-          studentId: application.studentId,
+          studentId: applicantProfile.id,
           internshipId: application.internshipId,
           applicationId: application.id,
           technicalSkillsRating: data.technicalSkillsRating ?? null,
